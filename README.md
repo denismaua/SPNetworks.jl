@@ -40,8 +40,8 @@ Yet another implementation of Sum-Product Networks in Julia.
 # Usage
 
 ```julia
-    # Creating a simple categorical SPN from string/file
-    io = IOBuffer("""# 
+# Creating a simple categorical SPN from string/file
+io = IOBuffer("""# 
 # Inner nodes
 1 + 2 0.2 3 0.5 4 0.3
 2 * 5 7
@@ -53,39 +53,39 @@ Yet another implementation of Sum-Product Networks in Julia.
 7 categorical 2 0.3 0.7
 8 categorical 2 0.8 0.2
 #""")
-    SPN, totaltime = SumProductNetworks.load(io)
-    @show SPN # show some information
-    for a in 1:2, b in 1:2
-        prob = SPN([a,b]) # compute probability of configuration
-        println("SPN($a,$b) = $prob")
-    end
+SPN, totaltime = SumProductNetworks.load(io)
+@show SPN # show some information
+for a in 1:2, b in 1:2
+    prob = SPN([a,b]) # compute probability of configuration
+    println("SPN($a,$b) = $prob")
+end
 
 
-    # Selective SPN
-    @show selSPN = SumProductNetwork(
-        [
-         SumNode([2,3],[0.4,0.6]),              # 1
-         ProductNode([4,5,6]),                  # 2
-         ProductNode([7,8,9]),                  # 3
-         IndicatorFunction(1,2.0),  # 4
-         CategoricalDistribution(2,[0.3,0.7]),  # 5
-         CategoricalDistribution(3,[0.4,0.6]),  # 6
-         CategoricalDistribution(2,[0.8,0.2]),  # 7
-         CategoricalDistribution(3,[0.9,0.1]),  # 8
-         IndicatorFunction(1,1.0) # 9
-        ]
-    )
-    # Computing marginal
-    value = selSPN([1,NaN,NaN])
-    println("selSPN(A=1) = $value") # ≈ 0.6
-    # in log-domain
-    @show logpdf(selSPN,[2,NaN,NaN]) # ≈ log(0.4)
+# Selective SPN
+@show selSPN = SumProductNetwork(
+    [
+        SumNode([2,3],[0.4,0.6]),              # 1
+        ProductNode([4,5,6]),                  # 2
+        ProductNode([7,8,9]),                  # 3
+        IndicatorFunction(1,2.0),  # 4
+        CategoricalDistribution(2,[0.3,0.7]),  # 5
+        CategoricalDistribution(3,[0.4,0.6]),  # 6
+        CategoricalDistribution(2,[0.8,0.2]),  # 7
+        CategoricalDistribution(3,[0.9,0.1]),  # 8
+        IndicatorFunction(1,1.0) # 9
+    ]
+)
+# Computing marginal
+value = selSPN([1,NaN,NaN])
+println("selSPN(A=1) = $value") # ≈ 0.6
+# in log-domain
+@show logpdf(selSPN,[2,NaN,NaN]) # ≈ log(0.4)
 
-    # MAP Inference
-    evidence = [0.0,0.0,0.0] # no evidence, maximize all variables -- solution is stored in this vector
-    mp = maxproduct!(evidence, selSPN, Set([1,2,3])) # evidence/solution, spn, query variables (all) 
-    println("MaxProduct(A=$(evidence[1]),B=$(evidence[2]),C=$(evidence[3])) -> $(exp(mp))")
-    @show logpdf(selSPN,evidence) 
+# MAP Inference
+evidence = [0.0,0.0,0.0] # no evidence, maximize all variables -- solution is stored in this vector
+mp = maxproduct!(evidence, selSPN, Set([1,2,3])) # evidence/solution, spn, query variables (all) 
+println("MaxProduct(A=$(evidence[1]),B=$(evidence[2]),C=$(evidence[3])) -> $(exp(mp))")
+@show logpdf(selSPN,evidence) 
 ```
 
 # License
