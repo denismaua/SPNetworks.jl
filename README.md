@@ -1,43 +1,52 @@
-# SumProductNetworks
+# SumProductNetworks.jl
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://denismaua.github.io/SumProductNetworks.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://denismaua.github.io/SumProductNetworks.jl/dev)
 [![Build Status](https://github.com/denismaua/SumProductNetworks.jl/workflows/CI/badge.svg)](https://github.com/denismaua/SumProductNetworks.jl/actions)
 
-# SumProductNetwork.jl
+A package for manipulating Sum-Product Networks.
 
-Yet another implementation of Sum-Product Networks in Julia.
+## Introduction
 
-# Features
+A Sum-Product Network (SPN) is either
 
-## Representation
+- a tractable distribution (e.g. a univariate discrete distribution), or
+- a convex combination of SPNs (sum node), or
+- a product of SPNs.
+
+SPNs are represented as rooted graphs, internally represented as linked arrays.
+The internal nodes represent convex combinations and products, and the leaves represent distributions.
+
+## Features
+
+### Representation
 
 - Discrete SPNs with Categorical distributions and Indicator Functions at leaves
 - Gaussian SPNs (Gaussian distributions at leaves)
 - TODO: SPNs with Bayesian Trees at leaves
 
-## Inference
+### Inference
 
 - Marginal inference
 - MAP Inference:
   - MaxProduct
-  - TODO: ArgMaxProduct
-  - TODO: SPN2MILP
-  - TODO: Hybrid Message Passing
+  - _TODO_: ArgMaxProduct
+  - _TODO_: SPN2MILP
+  - _TODO_: Hybrid Message Passing
 
-## Learning
+### Learning
 
-- TODO: EM parameter learning for Categorical and Gaussian SPNs (numerically unstable)
-- TODO: LearnSPN
-- TODO: Mixture of Chow-Liu Trees
+- _TODO_: EM parameter learning for Categorical and Gaussian SPNs (numerically unstable)
+- _TODO_: LearnSPN
+- _TODO_: Mixture of Chow-Liu Trees
 
-## Input/Output
+### Input/Output
 
 - Load network from file
 - Write network to file
 - Write graphviz graphical representation (dot file format)
 
-# Usage
+## Basic Usage
 
 ```julia
 # Creating a simple categorical SPN from string/file
@@ -88,6 +97,6 @@ println("MaxProduct(A=$(evidence[1]),B=$(evidence[2]),C=$(evidence[3])) -> $(exp
 @show logpdf(selSPN,evidence) 
 ```
 
-# License
+## License
 
 See LICENSE file.
