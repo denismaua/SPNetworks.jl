@@ -1,0 +1,13 @@
+name = "SumProductNetworks"
+uuid = "a22f005f-d29d-4892-833e-0fc2359d1e90"
+authors = ["Denis Maua <denis.maua@gmail.com>"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
