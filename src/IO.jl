@@ -45,7 +45,7 @@ end
     load(filename::AbstractString; offset=0)::SumProductNetwork
     load(io::IO=stdin; offset=0)::SumProductNetwork
 
-Reads network from file. Assume nodes appear in topological ordering, numbered from 1 to number_of_nodes (will fail otherwise). Assume node ids and values start at 1. Set offset = 1 if indices/values start at 0.
+Reads network from file. Assume node ids and values start at 1. Set offset = 1 if indices and values start at 0.
 """
 function load(filename::String; offset::Integer = 0)
     spn = open(filename) do file
@@ -96,9 +96,10 @@ function load(io::IO=stdin; offset::Integer = 0)
     nodelist = Vector{Node}(undef, length(nodes))
     for (id,node) in nodes
         nodelist[id] = node
-    end
-    # sort(collect(keys(nodes))) # sorted ids
-    SumProductNetwork(nodelist)
+    end    
+    spn = SumProductNetwork(nodelist)
+    sort!(spn) # ensure nodes are topologically sorted (with ties broken by bfs-order)
+    spn
 end
 
 """

@@ -7,7 +7,10 @@ export
     CategoricalDistribution,
     GaussianDistribution,
     LeafNode,
-    scope
+    scope,
+    isleaf,
+    isprod,
+    issum
 
 """
 Node Data Structures
@@ -55,7 +58,6 @@ end
 
 LeafNode = Union{IndicatorFunction,CategoricalDistribution,GaussianDistribution}
 
-
 """
     IndicatorFunction(x::Vector{<:Real})::Float64
 
@@ -76,6 +78,13 @@ Evaluates Gaussian distribution at given configuration
 function (n::GaussianDistribution)(x::AbstractVector{<:Real})::Float64
     return isnan(x[n.scope]) ? 1.0 : exp(-(x[n.scope]-n.mean)^2/(2*n.variance))/sqrt(2*π*n.variance)
 end
+
+"Is this a leaf node?"
+@inline isleaf(n::Node) = isa(n,LeafNode)
+"Is this a sum node?"
+@inline issum(n::Node) = isa(n,SumNode)
+"Is this a product node?"
+@inline isprod(n::Node) = isa(n,ProductNode)
 
 """
     logpdf(node,value)
