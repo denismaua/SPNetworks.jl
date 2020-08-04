@@ -49,6 +49,8 @@ The internal nodes represent convex combinations and products, and the leaves re
 ## Basic Usage
 
 ```julia
+# Load package
+using SumProductNetworks
 # Creating a simple categorical SPN from string/file
 io = IOBuffer("""# 
 # Inner nodes
@@ -62,8 +64,8 @@ io = IOBuffer("""#
 7 categorical 2 0.3 0.7
 8 categorical 2 0.8 0.2
 #""")
-SPN, totaltime = SumProductNetworks.load(io)
-@show SPN # show some information
+SPN = SumProductNetworks.load(io)
+@show SPN # show some information about network
 for a in 1:2, b in 1:2
     prob = SPN([a,b]) # compute probability of configuration
     println("SPN($a,$b) = $prob")
