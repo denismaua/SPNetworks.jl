@@ -2,17 +2,11 @@
 
 export
     SumProductNetwork,
-    nodes,
-    # variables,
-    children,
     leaves,
     sumnodes,
     productnodes,
     root,
-    scope,
-    weights
-    # getweight,
-    # logweight
+    scope
 
 
 """
@@ -21,7 +15,7 @@ export
 Implements a Sum-Product Network. Assumes nodes are numbered topologically so that `nodes[1]` is the root (output) of the network.
 
 # Arguments
-- `nodes`: vector of nodes sorted in topological order
+- `nodes`: vector of nodes sorted in topological order (use sort!(spn; root) after creating the network if this is not the case)
 """
 struct SumProductNetwork
     nodes::Vector{Node}

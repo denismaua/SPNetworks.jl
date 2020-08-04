@@ -5,7 +5,7 @@ using BenchmarkTools
 @info "# SumProductNetworks.jl Package"
 
 # Creation, evaluation, sampling
-include("testspn.jl")
+# include("testspn.jl")
 # include("testgspn.jl")
 # include("testeval.jl")
 

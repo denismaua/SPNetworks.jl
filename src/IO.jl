@@ -1,8 +1,4 @@
 # I/O functions
-export
-    load,
-    save,
-    todot
 
 """
 Prints out Node content
@@ -52,16 +48,16 @@ end
 Reads network from file. Assume nodes appear in topological ordering, numbered from 1 to number_of_nodes (will fail otherwise). Assume node ids and values start at 1. Set offset = 1 if indices/values start at 0.
 """
 function load(filename::String; offset::Integer = 0)
-    spn, totaltime = open(filename) do file
-        spn, totaltime = load(file, offset=offset)
+    spn = open(filename) do file
+        spn = load(file, offset=offset)
     end
-    ( spn, totaltime )
+    spn
 end
 function load(io::IO=stdin; offset::Integer = 0)
     # create dictionary of node_id => node (so they can be read in any order)
     nodes = Dict{UInt,Node}()
     # read and create nodes
-    timetaken = @elapsed for line in eachline(io)
+    for line in eachline(io)
         # remove line break
         line = strip(line)
         # remove comments
@@ -102,7 +98,7 @@ function load(io::IO=stdin; offset::Integer = 0)
         nodelist[id] = node
     end
     # sort(collect(keys(nodes))) # sorted ids
-    (SumProductNetwork(nodelist),timetaken)
+    SumProductNetwork(nodelist)
 end
 
 """

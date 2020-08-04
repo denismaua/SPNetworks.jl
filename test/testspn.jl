@@ -19,7 +19,7 @@
         ]
     )
     @test length(SPN) == 8
-    @test inducedcircuits(SPN) == 3
+    @test ncircuits(SPN) == 3
     sc = scope(SPN)
     # println("Scope: ", map(string,sc))
     @test (length(sc) == 2) && (1 in sc) && (2 in sc)
@@ -46,7 +46,7 @@
         ]
     )
     @test length(HMM) == 15
-    @test inducedcircuits(HMM) == 8
+    @test ncircuits(HMM) == 8
     @test length(scope(HMM)) == 3
     # println()
 
@@ -66,7 +66,7 @@
         ]
     )
     @test length(selSPN) == 9
-    @test inducedcircuits(selSPN) == 2
+    @test ncircuits(selSPN) == 2
     @test length(scope(selSPN)) == 3
     # println()
 
@@ -96,7 +96,7 @@
         ]
     )
     @test length(PSDD) == 19
-    @test inducedcircuits(PSDD) == 16
+    @test ncircuits(PSDD) == 16
     @test length(scope(PSDD)) == 4
     # println()
 

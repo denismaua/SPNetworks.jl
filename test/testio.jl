@@ -14,8 +14,7 @@
 7 categorical 2 0.3 0.7
 8 categorical 2 0.8 0.2
 #""")
-        S, totaltime = SumProductNetworks.load(io)
-        #print(S)
+        S = SumProductNetworks.load(io)
 
         #@info "## Creating network from file"
         @testset "Saving to file then reading it" begin
@@ -30,10 +29,9 @@
                 CategoricalDistribution(2, [0.8,0.2])  # 8
             ])
             # @info "## Saving network to disk" 
-            save(SPN,normpath("$(@__DIR__)/../assets/test.spn"))
+            SumProductNetworks.save(SPN,normpath("$(@__DIR__)/../assets/test.spn"))
             # @info "## Loading network from file"
-            SPN2, totaltime = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/test.spn"))
-            # println("Loading took ", totaltime, "s")
+            SPN2 = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/test.spn"))
             # @info "## Comparing sizes" 
             @test length(SPN) == length(SPN2) == length(S)
             @test size(SPN) == size(SPN2) == size(S)
@@ -44,7 +42,6 @@
                 pred = SPN2([a,b])
                 ref = SPN([a,b])
                 ref2 = S([a,b])
-                # println("SPN($a,$b) = $pred")
                 @test pred == ref == ref2
             end
         end
@@ -60,7 +57,7 @@
 
     # println()
     @testset "XOR SPN" begin
-        XOR, totaltime = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/xor.spn"))
+        XOR = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/xor.spn"))
         # println("Loading took ", totaltime, "s")
         # @info "## Printing network information"
         # println(XOR)
@@ -75,8 +72,7 @@
     
     @testset "HMM SPN"  begin
         # @info "## Loading network"
-        HMM, totaltime = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/hmm.spn"))
-        # println("Loading took ", totaltime, "s")
+        HMM = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/hmm.spn"))
         # @info "## Printing network information"
         # println(HMM)
 
@@ -94,7 +90,7 @@
     end
     
     @testset "Reading Small SPN in pyspn's format" begin
-        PySPN, totaltime = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/example.pyspn.spn"), offset = 1)
+        PySPN = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/example.pyspn.spn"), offset = 1)
         # println("Loading took ", totaltime, "s")
         # println(PySPN)
         # println("Scope: ", map(string,scope(PySPN)))
@@ -104,8 +100,7 @@
     # println()
 
     @testset "# Reading Breast-Cancer SPN in pyspn's format" begin
-        PySPN, totaltime = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/breast-cancer.spn"), offset = 1)
-        # println("Loading took ", totaltime, "s")
+        PySPN = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/breast-cancer.spn"), offset = 1)
         # println(PySPN)
         @test length(scope(PySPN)) == 10
         @test logpdf(PySPN,fill(NaN,10)) ≈ 0.0 atol=1e-6

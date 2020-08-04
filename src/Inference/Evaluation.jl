@@ -2,12 +2,8 @@
 
 export
     logpdf, 
-    logpdf!,
     rand,
-    inducedcircuits,
-    NLL,
-    MAE
-
+    ncircuits
 
 """
   (spn::SumProductNetwork)(x::AbstractVector{<:Real})::Float64
@@ -201,17 +197,17 @@ function Base.rand(spn::SumProductNetwork, N::Integer)
 end
 
 """
-    inducedcircuits(spn)
+    ncircuits(spn)
 
 Counts the number of induced circuits of the sum-product network `spn`.
 """
-inducedcircuits(spn::SumProductNetwork) = inducedcircuits!(Array{Int}(undef,length(spn)),spn)
+ncircuits(spn::SumProductNetwork) = ncircuits!(Array{Int}(undef,length(spn)),spn)
 """
-    inducedcircuits!(values,spn)
+    ncircuits!(values,spn)
 
 Counts the number of induced circuits of the sum-product network `spn`, caching intermediate values.
 """
-function inducedcircuits!(values::AbstractVector{Int}, spn::SumProductNetwork)
+function ncircuits!(values::AbstractVector{Int}, spn::SumProductNetwork)
     @assert length(values) == length(spn)
     # traverse nodes in reverse topological order (bottom-up)
     for i in length(spn):-1:1
