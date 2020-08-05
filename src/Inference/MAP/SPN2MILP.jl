@@ -1,5 +1,4 @@
 # Implementation of SPN2MILP algorithm
-export spn2milp
 
 import AlgebraicDecisionDiagrams
 # Aliases

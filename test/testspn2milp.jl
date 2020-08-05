@@ -1,4 +1,5 @@
 # Test SPN to MILP translation
+import SumProductNetworks: spn2milp
 
 @testset "SPN2MILP" begin
     # SPN with dichotomic sum nodes (<= 2 children)

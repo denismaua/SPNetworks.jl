@@ -5,7 +5,7 @@ using BenchmarkTools
 @info "# SumProductNetworks.jl Package"
 
 # Creation, evaluation, sampling
-# include("testspn.jl")
+include("testspn.jl")
 # include("testgspn.jl")
 # include("testeval.jl")
 
@@ -13,7 +13,7 @@ using BenchmarkTools
 include("testio.jl")             
 
 # MAP Inference
-# include("testmaxproduct.jl")
+include("testmaxproduct.jl")
 # include("testspn2milp.jl")
 
 # Parameter learning

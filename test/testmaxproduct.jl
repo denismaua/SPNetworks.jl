@@ -1,4 +1,5 @@
 # Test maxproduct algorithm
+import SumProductNetworks: maxproduct!
 
 @testset "MaxProduct" begin
 
@@ -87,7 +88,7 @@
     println()
 
     @info "### Breast-Cancer SPN"
-    SPN, _ = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/breast-cancer.spn"), offset=1)
+    SPN = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/breast-cancer.spn"), offset=1)
     query = Set([9,1,5])
     evidence = [0,2,NaN,NaN,0,NaN,2,NaN,0,1]
     maxproduct!(evidence,SPN,query)

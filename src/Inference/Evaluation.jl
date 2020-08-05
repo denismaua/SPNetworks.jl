@@ -78,13 +78,13 @@ function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::Abs
     # traverse nodes in reverse topological order (bottom-up)
     for i in length(spn):-1:1
         @inbounds node = spn[i]
-        if isa(node,ProductNode)
+        if isprod(node)
             lval = 0.0
             for j in node.children
                 @inbounds lval += values[j]
             end
             @inbounds values[i] = isfinite(lval) ? lval : -Inf
-        elseif isa(node,SumNode)
+        elseif issum(node)
             # log trick to improve numerical stability
             m = -Inf
             for j in node.children
@@ -147,11 +147,11 @@ function Base.rand(spn::SumProductNetwork)
     queue = [1]
     while !isempty(queue)
         n = popfirst!(queue)
-        if isa(spn[n],SumNode)
+        if issum(spn[n])
             # sample one child to visit
             c = sample(spn[n].weights)  
             push!(queue, spn[n].children[c])
-        elseif isa(spn[n],ProductNode)
+        elseif isprod(spn[n])
             # visit every child
             append!(queue, children(spn,n))
         else
@@ -180,11 +180,11 @@ function Base.rand(spn::SumProductNetwork, N::Integer)
         queue = [1]
         while length(queue) > 0
             n = popfirst!(queue)
-            if isa(spn[n],SumNode)
+            if issum(spn[n])
                 # sample one child to visit
                 c = sample(spn[n].weights) # sparse array to vector inserts 0 at first coordinate
                 push!(queue, spn[n].children[c])
-            elseif isa(spn[n],ProductNode)
+            elseif isprod(spn[n])
                 # visit every child
                 append!(queue, children(spn,n))
             else

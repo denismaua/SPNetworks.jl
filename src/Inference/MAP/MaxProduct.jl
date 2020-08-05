@@ -1,8 +1,5 @@
 # Implements the Max-Product Algorithm for MAP Inference
 
-export
-    maxproduct!
-
 """
     maxproduct!(evidence,spn,query)
 
