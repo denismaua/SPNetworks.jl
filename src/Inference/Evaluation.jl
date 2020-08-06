@@ -2,11 +2,8 @@
 
 export
     logpdf, 
-    logpdf!,
     rand,
-    NLL,
-    MAE
-
+    ncircuits
 
 """
   (spn::SumProductNetwork)(x::AbstractVector{<:Real})::Float64
@@ -77,17 +74,17 @@ end
 Evaluates the sum-product network `spn` in log domain at configuration `x` and stores values of each node in the vector values.
 """
 function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::AbstractVector{<:Real})::Float64
-    @assert length(values) == length(spn)
+    # @assert length(values) == length(spn)
     # traverse nodes in reverse topological order (bottom-up)
     for i in length(spn):-1:1
         @inbounds node = spn[i]
-        if isa(node,ProductNode)
+        if isprod(node)
             lval = 0.0
             for j in node.children
                 @inbounds lval += values[j]
             end
             @inbounds values[i] = isfinite(lval) ? lval : -Inf
-        elseif isa(node,SumNode)
+        elseif issum(node)
             # log trick to improve numerical stability
             m = -Inf
             for j in node.children
@@ -123,6 +120,7 @@ Sample values from leaves.
 """
 @inline Base.rand(n::IndicatorFunction) = n.value
 @inline Base.rand(n::CategoricalDistribution) = sample(n.values)
+@inline Base.rand(n::GaussianDistribution) = n.mean + sqrt(n.variance)*randn()
 
 """
     rand(spn)
@@ -134,11 +132,11 @@ as a vector of values
 # Example
 
 ```julia
-julia> println(rand(spn))
+julia> rand(spn)
 [2, 1]
 ```
 """
-function Base.rand(spn::SumProductNetwork)::Vector{Float64}
+function Base.rand(spn::SumProductNetwork)
     if length(scope(spn)) > 0
         numvars = length(scope(spn))
     else
@@ -149,19 +147,16 @@ function Base.rand(spn::SumProductNetwork)::Vector{Float64}
     queue = [1]
     while !isempty(queue)
         n = popfirst!(queue)
-        if isa(spn[n],SumNode)
+        if issum(spn[n])
             # sample one child to visit
             c = sample(spn[n].weights)  
             push!(queue, spn[n].children[c])
-        elseif isa(spn[n],ProductNode)
+        elseif isprod(spn[n])
             # visit every child
             append!(queue, children(spn,n))
-        elseif isa(spn[n],CategoricalDistribution)
-            # draw value from distribution
-            a[ spn[n].scope ] = rand(spn[n])         
-        elseif isa(spn[n],GaussianDistribution)
-            # draw from Gaussian distribution
-            a[ spn[n].scope ] = spn[n].mean + sqrt(spn[n].variance)*randn()
+        else
+            # draw value from node distribution
+            a[ spn[n].scope ] = rand(spn[n])      
         end
     end
     return a
@@ -173,7 +168,7 @@ end
 Returns a matrix of samples generated according to the probability
 defined by the network `spn`. 
 """
-function Base.rand(spn::SumProductNetwork, N::Integer)::Matrix
+function Base.rand(spn::SumProductNetwork, N::Integer)
     if length(scope(spn)) > 0
         numvars = length(scope(spn))
     else
@@ -185,24 +180,48 @@ function Base.rand(spn::SumProductNetwork, N::Integer)::Matrix
         queue = [1]
         while length(queue) > 0
             n = popfirst!(queue)
-            if isa(spn[n],SumNode)
+            if issum(spn[n])
                 # sample one child to visit
                 c = sample(spn[n].weights) # sparse array to vector inserts 0 at first coordinate
                 push!(queue, spn[n].children[c])
-            elseif isa(spn[n],ProductNode)
+            elseif isprod(spn[n])
                 # visit every child
                 append!(queue, children(spn,n))
-            elseif isa(spn[n],CategoricalDistribution)
+            else
                 # draw value from distribution
                 Sample[ i, spn[n].scope ] = rand(spn[n])         
-            elseif isa(spn[n],GaussianDistribution)
-                Sample[ i, spn[n].scope ] = spn[n].mean + sqrt(spn[n].variance)*randn()
             end 
         end
     end
     return Sample
 end
 
+"""
+    ncircuits(spn)
+
+Counts the number of induced circuits of the sum-product network `spn`.
+"""
+ncircuits(spn::SumProductNetwork) = ncircuits!(Array{Int}(undef,length(spn)),spn)
+"""
+    ncircuits!(values,spn)
+
+Counts the number of induced circuits of the sum-product network `spn`, caching intermediate values.
+"""
+function ncircuits!(values::AbstractVector{Int}, spn::SumProductNetwork)
+    @assert length(values) == length(spn)
+    # traverse nodes in reverse topological order (bottom-up)
+    for i in length(spn):-1:1
+        @inbounds node = spn[i]
+        if isa(node,ProductNode)
+            @inbounds values[i] = mapreduce(j -> values[j], *, node.children)
+        elseif isa(node,SumNode)
+            @inbounds values[i] = sum(values[node.children])
+        else # is a leaf node
+            @inbounds values[i] = 1
+        end
+    end
+    @inbounds values[1]
+end
 
 """
 Computes the average negative loglikelihood of a dataset data assigned by spn.

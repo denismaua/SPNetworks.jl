@@ -1,8 +1,4 @@
 # I/O functions
-export
-    load,
-    save,
-    todot
 
 """
 Prints out Node content
@@ -46,22 +42,22 @@ function Base.show(io::IO, spn::SumProductNetwork)
 end
 
 """
-    load(filename::AbstractString; offset=0)::SumProductNetwork
-    load(io::IO=stdin; offset=0)::SumProductNetwork
+    SumProductNetwork(filename::AbstractString; offset=0)::SumProductNetwork
+    SumProductNetwork(io::IO=stdin; offset=0)::SumProductNetwork
 
-Reads network from file. Assume nodes appear in topological ordering, numbered from 1 to number_of_nodes (will fail otherwise). Assume node ids and values start at 1. Set offset = 1 if indices/values start at 0.
+Reads network from file. Assume 1-based indexing for node ids and values at indicator nodes. Set offset = 1 if these values are 0-based instead.
 """
-function load(filename::String; offset::Integer = 0)
-    spn, totaltime = open(filename) do file
-        spn, totaltime = load(file, offset=offset)
+function SumProductNetwork(filename::String; offset::Integer = 0)
+    spn = open(filename) do file
+        spn = SumProductNetwork(file, offset=offset)
     end
-    ( spn, totaltime )
+    spn
 end
-function load(io::IO=stdin; offset::Integer = 0)
+function SumProductNetwork(io::IO=stdin; offset::Integer = 0)
     # create dictionary of node_id => node (so they can be read in any order)
     nodes = Dict{UInt,Node}()
     # read and create nodes
-    timetaken = @elapsed for line in eachline(io)
+    for line in eachline(io)
         # remove line break
         line = strip(line)
         # remove comments
@@ -100,9 +96,10 @@ function load(io::IO=stdin; offset::Integer = 0)
     nodelist = Vector{Node}(undef, length(nodes))
     for (id,node) in nodes
         nodelist[id] = node
-    end
-    # sort(collect(keys(nodes))) # sorted ids
-    (SumProductNetwork(nodelist),timetaken)
+    end    
+    spn = SumProductNetwork(nodelist)
+    sort!(spn) # ensure nodes are topologically sorted (with ties broken by bfs-order)
+    spn
 end
 
 """

@@ -1,7 +1,7 @@
 name = "SumProductNetworks"
 uuid = "a22f005f-d29d-4892-833e-0fc2359d1e90"
 authors = ["Denis Maua <denis.maua@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 AlgebraicDecisionDiagrams = "fda02c4b-e729-4157-987e-1560c7fe1ac2"
@@ -10,10 +10,4 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 Clustering = "0.14"
-julia = "1"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
+julia = "1.4"

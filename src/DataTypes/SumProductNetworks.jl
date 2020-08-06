@@ -2,26 +2,21 @@
 
 export
     SumProductNetwork,
-    nodes,
-    # variables,
-    children,
     leaves,
     sumnodes,
     productnodes,
     root,
-    scope,
-    weights
-    # getweight,
-    # logweight
+    scope
 
 
 """
     SumProductNetwork(nodes::Vector{Node})
 
-Implements a Sum-Product Network. Assumes nodes are numbered topologically so that `nodes[1]` is the root (output) of the network.
+Implements a Sum-Product Network. 
+Assumes nodes are numbered topologically so that `nodes[1]` is the root (output) of the network and nodes[end] is a leaf.
 
 # Arguments
-- `nodes`: vector of nodes sorted in topological order
+- `nodes`: vector of nodes sorted in topological order (use sort!(spn) after creating the network if this is not the case).
 """
 struct SumProductNetwork
     nodes::Vector{Node}
@@ -51,25 +46,43 @@ end
 Base.eltype(spn::Type{SumProductNetwork}) = Node
 
 """
-    sort!(spn::SumProductNetwork; root=1)
+    sort!(spn::SumProductNetwork)
 
-Sort nodes in breadth-first oder with given root node, and modify node ids accordingly.
+Sort nodes in topological order (with ties broken by breadth-first order) and modify node ids accordingly.
 Returns the permutation applied.
 """
-function sort!(spn::SumProductNetwork; root=1)    
-    # collect node ids in BFS order
-    open = Vector{Int}()
-    visited = Set{Int}()
-    closed = Vector{Int}() # bfs order
-    push!(open, root) # enqueue root node (must be first)
-    while !isempty(open)
-        n = popfirst!(open)
-        push!(visited, n)
-        push!(closed, n)
-        if !isa(spn[n], LeafNode)
-            append!(open, ch for ch in spn[n].children if !in(ch, visited) && !in(ch, open))
+function sort!(spn::SumProductNetwork)    
+    # First compute the number of parents for each node
+   pa = zeros(length(spn))
+   for (i,n) in enumerate(spn)
+        if !isleaf(n)
+            for j in n.children            
+                pa[j] += 1
+            end
         end
     end
+    @assert count(isequal(0), pa) == 1 "SumProductNetworks has more than one parentless node"
+    root = findfirst(isequal(0),pa) # root is the single parentless node
+    # Kanh's algorithm: collect node ids in topological BFS order
+    open = Vector{Int}()
+    # visited = Set{Int}()
+    closed = Vector{Int}() # bfs order
+    push!(open, root) # enqueue root node 
+    while !isempty(open)
+        n = popfirst!(open) # dequeue node
+        # push!(visited, n)
+        push!(closed, n)
+        if !isleaf(spn[n])
+            # append!(open, ch for ch in spn[n].children if !in(ch, visited) && !in(ch, open))
+            for j in spn[n].children
+                pa[j] -= 1
+                if pa[j] == 0
+                    push!(open, j)
+                end
+            end
+        end
+    end
+    @assert length(closed) == length(spn)
     inverse = similar(closed) # inverse mapping
     for i=1:length(closed)
         inverse[closed[i]] = i
@@ -78,7 +91,7 @@ function sort!(spn::SumProductNetwork; root=1)
     permute!(spn.nodes,closed) # is this faster than spn.nodes .= spn.nodes[closed]? 
     # now fix ids of children
     for i=1:length(spn)
-        if !isa(spn.nodes[i],LeafNode)
+        if !isleaf(spn.nodes[i])
             for (j,ch) in enumerate(spn.nodes[i].children)
                 spn.nodes[i].children[j] = inverse[ch]
             end
@@ -87,7 +100,7 @@ function sort!(spn::SumProductNetwork; root=1)
     closed
 end
 """
-    getnodes(spn::SumProductNetwork)
+    nodes(spn::SumProductNetwork)
 
 Collects the list of nodes.
 """
@@ -104,23 +117,23 @@ Select nodes by topology
 #TODO #variables(spn::SumProductNetwork) = collect(1:spn._numvars)
 @inline children(spn::SumProductNetwork,n) = @inbounds spn.nodes[n].children
 """
-Return vector of weights associate to outgoing edges of (sum) node n
+Return vector of weights associate to outgoing edges of (sum) node n.
 """
 @inline weights(spn::SumProductNetwork, n) = @inbounds spn.nodes[n].weights
-"""
-Return the value of the weight associate to edge from `i` to `j`
-"""
+# """
+# Return the value of the weight associate to edge from `i` to `j`
+# """
 #@inline getweight(spn::SumProductNetwork, i, j) = @inbounds spn.nodes[n].weights[j]
-"""
-Return the log-value of the weight associate to edge from `i` to `j`
-"""
+# """
+# Return the log-value of the weight associate to edge from `i` to `j`
+# """
 #@inline logweight(spn::SumProductNetwork, i, j) = log(getweight(spn,i,j))
 """
     size(spn)
 
-Computes the number of parameters in the network
+Computes the number of parameters in the network.
 """
-function Base.size(spn::SumProductNetwork)::Integer
+function Base.size(spn::SumProductNetwork)
     numparams = 0
     for i = 1:length(spn)
         if isa(spn[i],SumNode)
@@ -131,7 +144,7 @@ function Base.size(spn::SumProductNetwork)::Integer
             numparams += 2
         end
     end
-    return numparams
+    numparams
 end
 
 """

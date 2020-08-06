@@ -1,8 +1,5 @@
 # Implements the Max-Product Algorithm for MAP Inference
 
-export
-    maxproduct!
-
 """
     maxproduct!(evidence,spn,query)
 
@@ -34,7 +31,7 @@ function maxproduct!(evidence::AbstractVector,spn::SumProductNetwork,query::Abst
     mp
 end
 """
-    maxproduct!(values,spn,query,evidence)
+    maxproduct!(values,tree,spn,query,evidence)
 
 Approximates the maximum value of a configuration of query variables for given some evidence. 
 
