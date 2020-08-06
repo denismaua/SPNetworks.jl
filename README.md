@@ -64,15 +64,15 @@ io = IOBuffer("""#
 7 categorical 2 0.3 0.7
 8 categorical 2 0.8 0.2
 #""")
-SPN = SumProductNetworks.load(io)
-@show SPN # show some information about network
+spn = SumProductNetwork(io)
+@show spn # show some information about network
 for a in 1:2, b in 1:2
-    prob = SPN([a,b]) # compute probability of configuration
-    println("SPN($a,$b) = $prob")
+    prob = spn([a,b]) # compute probability of configuration
+    println("spn($a,$b) = $prob")
 end
 
 # Selective SPN
-@show selSPN = SumProductNetwork(
+@show selspn = SumProductNetwork(
     [
         SumNode([2,3],[0.4,0.6]),              # 1
         ProductNode([4,5,6]),                  # 2
@@ -86,18 +86,22 @@ end
     ]
 )
 # Computing marginal
-value = selSPN([1,NaN,NaN])
-println("selSPN(A=1) = $value") # ≈ 0.6
+value = selspn([1,NaN,NaN])
+println("selspn(A=1) = $value") # ≈ 0.6
 # in log-domain
-@show logpdf(selSPN,[2,NaN,NaN]) # ≈ log(0.4)
+@show logpdf(selspn,[2,NaN,NaN]) # ≈ log(0.4)
 
 # MAP Inference
+import SumProductNetworks: maxproduct!
 evidence = [0.0,0.0,0.0] # no evidence, maximize all variables -- solution is stored in this vector
-mp = maxproduct!(evidence, selSPN, Set([1,2,3])) # evidence/solution, spn, query variables (all) 
+query = Set([1,2,3]) # variables to be maximized (all) -- non-evidence, non-query variables are marginalized
+mp = maxproduct!(evidence, selspn, query) # run maxproduct and store solution in evidence
 println("MaxProduct(A=$(evidence[1]),B=$(evidence[2]),C=$(evidence[3])) -> $(exp(mp))")
-@show logpdf(selSPN,evidence) 
+@show logpdf(selspn,evidence) # compute log-probability of solution
 ```
 
 ## License
 
-See LICENSE file.
+Copyright (c) 2020 Denis D. Mauá.
+
+See LICENSE file for more information.

@@ -2,7 +2,7 @@ using SumProductNetworks
 using Test
 using BenchmarkTools
 
-@info "# SumProductNetworks.jl Package"
+@testset "SumProductNetworks.jl" begin
 
 # Creation, evaluation, sampling
 include("testspn.jl")
@@ -27,3 +27,5 @@ include("testmaxproduct.jl")
 # Dense network generation
 # include("testchain.jl")
 # include("testdense.jl")
+
+end

@@ -42,18 +42,18 @@ function Base.show(io::IO, spn::SumProductNetwork)
 end
 
 """
-    load(filename::AbstractString; offset=0)::SumProductNetwork
-    load(io::IO=stdin; offset=0)::SumProductNetwork
+    SumProductNetwork(filename::AbstractString; offset=0)::SumProductNetwork
+    SumProductNetwork(io::IO=stdin; offset=0)::SumProductNetwork
 
-Reads network from file. Assume node ids and values start at 1. Set offset = 1 if indices and values start at 0.
+Reads network from file. Assume 1-based indexing for node ids and values at indicator nodes. Set offset = 1 if these values are 0-based instead.
 """
-function load(filename::String; offset::Integer = 0)
+function SumProductNetwork(filename::String; offset::Integer = 0)
     spn = open(filename) do file
-        spn = load(file, offset=offset)
+        spn = SumProductNetwork(file, offset=offset)
     end
     spn
 end
-function load(io::IO=stdin; offset::Integer = 0)
+function SumProductNetwork(io::IO=stdin; offset::Integer = 0)
     # create dictionary of node_id => node (so they can be read in any order)
     nodes = Dict{UInt,Node}()
     # read and create nodes

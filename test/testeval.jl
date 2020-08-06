@@ -5,7 +5,7 @@
     using DataFrames, CSV
 
     @info "## Loading network from file"
-    SPN = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/nltcs.learnspn.notuning.spn"))
+    SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/nltcs.learnspn.notuning.spn"))
     # println("Loading took ", totaltime, "s")
     println(SPN)
 
@@ -22,7 +22,7 @@
     @btime logpdf($SPN,$test)
     
     @info "## Loading network from file"
-    SPN = SumProductNetworks.load(normpath("$(@__DIR__)/../assets/nltcs.learnspn.em.spn"))
+    SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/nltcs.learnspn.em.spn"))
     # println("Loading took ", totaltime, "s")
     println(SPN)
 
