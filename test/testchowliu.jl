@@ -25,7 +25,7 @@
             )
         ]
     )
-    @show spn = compile(tree)
+    @debug spn = compile(tree)
     @test length(spn) == 25
     @test length(scope(spn)) == 4
     @test spn([NaN,NaN,NaN,NaN]) ≈ 1.0

@@ -2,9 +2,14 @@
 
 import AlgebraicDecisionDiagrams
 # Aliases
-ADD = AlgebraicDecisionDiagrams
-MLExpr = ADD.MultilinearExpression
+const ADD = AlgebraicDecisionDiagrams
+const MLExpr = ADD.MultilinearExpression
 
+"""
+    spn2milp(spn::SumProductNetwork)
+
+Translates sum-product network `spn` into MAP-equivalent mixed-integer linear program
+"""
 function spn2milp(spn::SumProductNetwork)
     # obtain scope of every node
     # TODO: move this to function scope in Core.jl
@@ -12,7 +17,7 @@ function spn2milp(spn::SumProductNetwork)
     for i = length(spn):-1:1
         node = spn[i]
         # println(i, " : ", node)
-        if isa(node, LeafNode)
+        if isleaf(node)
             scopes[i] = Int[node.scope]
         else # can probably be done more efficiently
             scopes[i] = Base.reduce(union, map(j -> scopes[j], node.children)) 
@@ -20,7 +25,7 @@ function spn2milp(spn::SumProductNetwork)
     end
     # Extract ADDs for each variable
     ## Colect ids of sum nodes
-    sumnodes = filter(i -> isa(spn[i],SumNode), 1:length(spn))
+    sumnodes = filter(i -> issum(spn[i]), 1:length(spn))
     ## Create a bucket for each sum node
     buckets = [ ADD.DecisionDiagram{MLExpr}[] for _=1:length(sumnodes) ]
     ## First process ADDs for manifest variables
@@ -46,16 +51,22 @@ function spn2milp(spn::SumProductNetwork)
     # - Interact with gurobi
     buckets
 end
+
+"""
+    extractADD!(cache::Dict{Int,ADD.DecisionDiagram{MLExpr}},spn::SumProductNetwork,node::Integer,var::Integer,scopes)
+
+Extract algebraic decision diagram representing the distribution of a variable `var`, using a `cache` of ADDs and `scopes`.
+"""
 function extractADD!(cache::Dict{Int,ADD.DecisionDiagram{MLExpr}},spn::SumProductNetwork,node::Integer,var::Integer,scopes)
     if haskey(cache, node) return cache[node] end
-    if isa(spn[node],SumNode)
+    if issum(spn[node])
         @assert length(spn[node].children) == 2
         low = extractADD!(cache,spn,spn[node].children[1],var,scopes)
         high = extractADD!(cache,spn,spn[node].children[2],var,scopes)
         γ = ADD.Node(Int(node),low,high)
         cache[node] = γ
         return γ
-    elseif isa(spn[node],ProductNode)
+    elseif isprod(spn[node])
         for j in spn[node].children
             if var in scopes[j]
                 γ = extractADD!(cache,spn,j,var,scopes)

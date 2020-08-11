@@ -26,7 +26,7 @@ end
 
 # @testset "Structure learning" begin
 #   include("testlearnspn.jl")
-#   include("testchowliu.jl")
+  include("testchowliu.jl")
 # end
 
 # @testset "Dense network generation" begin
