@@ -53,7 +53,7 @@ The internal nodes represent convex combinations and products, and the leaves re
 # Load package
 using SumProductNetworks
 # Creating a simple categorical SPN from string/file
-io = IOBuffer("""# 
+io = IOBuffer("""# A simple SPN (anything after # is ignored)
 # Inner nodes
 1 + 2 0.2 3 0.5 4 0.3
 2 * 5 7
@@ -66,7 +66,7 @@ io = IOBuffer("""#
 8 categorical 2 0.8 0.2
 #""")
 spn = SumProductNetwork(io)
-@show spn # show some information about network
+summary(spn) # show some information about network
 for a in 1:2, b in 1:2
     prob = spn(a,b) # compute probability of configuration
     println("spn($a,$b) = $prob")

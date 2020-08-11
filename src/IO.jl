@@ -30,15 +30,28 @@ function Base.show(io::IO, n::GaussianDistribution)
 end
 
 """ 
-Prints out information about the network 
+    summary(io::IO, spn::SumProductNetwork)
+
+Print out information about the network `spn` to stream `io`
 """
-function Base.show(io::IO, spn::SumProductNetwork)
+function Base.summary(io::IO, spn::SumProductNetwork)
     #println(io, summary(spn))
     println(io, "Sum-Product Network with:")
     println(io, "│\t$(length(spn)) nodes: $(length(sumnodes(spn))) sums, $(length(productnodes(spn))) products, $(length(leaves(spn))) leaves")
     println(io, "│\t$(nparams(spn)) parameters")
     print(io, "╰\t$(length(scope(spn))) variables")
     #println(io, "\tdepth = $(length(layers(spn)))")
+end
+
+""" 
+    show(io::IO, spn::SumProductNetwork)
+
+Print the nodes of the network `spn` to stream `io`
+"""
+function Base.show(io::IO, spn::SumProductNetwork) 
+    for (i, node) in enumerate(spn)
+        println(io, i, " ", node)
+    end
 end
 
 """
