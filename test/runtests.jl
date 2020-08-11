@@ -4,28 +4,34 @@ using BenchmarkTools
 
 @testset "SumProductNetworks.jl" begin
 
-# Creation, evaluation, sampling
-include("testspn.jl")
-# include("testgspn.jl")
-# include("testeval.jl")
+@testset "Creation, evaluation, sampling" begin
+    include("testspn.jl")
+    # include("testgspn.jl")
+    # include("testeval.jl")
+end
 
 # I/O
 include("testio.jl")             
 
 # MAP Inference
-include("testmaxproduct.jl")
-# include("testspn2milp.jl")
+@testset "MAP Infrence" begin
+    include("testmaxproduct.jl")
+    # include("testspn2milp.jl")
+end
 
-# Parameter learning
-# include("testparamlearn.jl")
-# include("testparamlearngspn.jl")
+# @testset "Parameter learning" begin
+#   include("testparamlearn.jl")
+#   include("testparamlearngspn.jl")
+# end
 
-# Structure learning
-# include("testlearnspn.jl")
-# include("testchowliu.jl")
+# @testset "Structure learning" begin
+#   include("testlearnspn.jl")
+#   include("testchowliu.jl")
+# end
 
-# Dense network generation
-# include("testchain.jl")
-# include("testdense.jl")
+# @testset "Dense network generation" begin
+#   include("testchain.jl")
+#   include("testdense.jl")
+# end
 
 end

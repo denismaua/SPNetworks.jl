@@ -4,7 +4,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://denismaua.github.io/SumProductNetworks.jl/dev)
 [![Build Status](https://github.com/denismaua/SumProductNetworks.jl/workflows/CI/badge.svg)](https://github.com/denismaua/SumProductNetworks.jl/actions)
 
-A package for manipulating Sum-Product Networks.
+A Julia package for manipulating Sum-Product Networks.
 
 ## Introduction
 
@@ -23,13 +23,14 @@ The internal nodes represent convex combinations and products, and the leaves re
 
 - Discrete SPNs with Categorical distributions and Indicator Functions at leaves
 - Gaussian SPNs (Gaussian distributions at leaves)
-- TODO: SPNs with Bayesian Trees at leaves
+- _TODO_: SPNs with Bayesian Trees at leaves
 
 ### Inference
 
 - Marginal inference
 - MAP Inference:
   - MaxProduct
+  - _TODO_: Local Search
   - _TODO_: ArgMaxProduct
   - _TODO_: SPN2MILP
   - _TODO_: Hybrid Message Passing
@@ -37,7 +38,7 @@ The internal nodes represent convex combinations and products, and the leaves re
 ### Learning
 
 - _TODO_: EM parameter learning for Categorical and Gaussian SPNs (numerically unstable)
-- _TODO_: LearnSPN
+- _TODO_: Structure learning by LearnSPN
 - _TODO_: Mixture of Chow-Liu Trees
 
 ### Input/Output
@@ -71,6 +72,7 @@ for a in 1:2, b in 1:2
     println("spn($a,$b) = $prob")
 end
 
+import SumProductNetworks: SumNode, ProductNode, CategoricalDistribution, IndicatorFunction
 # Selective SPN
 @show selspn = SumProductNetwork(
     [
@@ -92,7 +94,7 @@ println("selspn(A=1) = $value") # ≈ 0.6
 @show logpdf(selspn,[2,NaN,NaN]) # ≈ log(0.4)
 
 # MAP Inference
-import SumProductNetworks: maxproduct!
+import SumProductNetworks.MAPInference: maxproduct!
 evidence = [0.0,0.0,0.0] # no evidence, maximize all variables -- solution is stored in this vector
 query = Set([1,2,3]) # variables to be maximized (all) -- non-evidence, non-query variables are marginalized
 mp = maxproduct!(evidence, selspn, query) # run maxproduct and store solution in evidence

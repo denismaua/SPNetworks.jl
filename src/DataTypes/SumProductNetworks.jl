@@ -2,10 +2,6 @@
 
 export
     SumProductNetwork,
-    leaves,
-    sumnodes,
-    productnodes,
-    root,
     scope
 
 
@@ -25,7 +21,7 @@ end
 """
     length(spn::SumProductNetwork)
 
-Computes the number of nodes in the network 
+Computes the number of nodes in the sum-product network `spn`.
 """
 Base.length(spn::SumProductNetwork) = length(nodes(spn))
 
@@ -102,7 +98,7 @@ end
 """
     nodes(spn::SumProductNetwork)
 
-Collects the list of nodes.
+Collects the list of nodes in `spn`.
 """
 @inline nodes(spn::SumProductNetwork) = spn.nodes
 
@@ -131,7 +127,7 @@ Return vector of weights associate to outgoing edges of (sum) node n.
 """
     size(spn)
 
-Computes the number of parameters in the network.
+Computes the number of parameters in the network `spn`.
 """
 function Base.size(spn::SumProductNetwork)
     numparams = 0
@@ -150,6 +146,6 @@ end
 """
     scope(spn)
 
-Returns the scope of network spn, given by the scope of its root node.
+Returns the scope of network `spn`, given by the scope of its root node.
 """
 scope(spn::SumProductNetwork)::AbstractVector = unique(collect(map(n->scope(n), leaves(spn))))  

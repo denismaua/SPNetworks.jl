@@ -1,17 +1,5 @@
 # Implements node data types and associated helper functions
 
-export
-    SumNode,
-    ProductNode,
-    IndicatorFunction,
-    CategoricalDistribution,
-    GaussianDistribution,
-    LeafNode,
-    scope,
-    isleaf,
-    isprod,
-    issum
-
 """
 Node Data Structures
 

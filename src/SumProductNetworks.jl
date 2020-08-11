@@ -33,20 +33,19 @@ include("Utils.jl")
 include("Inference/Evaluation.jl")
 
 # MAP Inference
-include("Inference/MAP/MaxProduct.jl")
-include("Inference/MAP/SPN2MILP.jl")
+include("Inference/MAP/MAP.jl")
 
 # I/O functions
 include("IO.jl")
 
 # For learning the parameters of SPNs
-include("Learning/ParameterLearning.jl")
+# include("Learning/ParameterLearning.jl")
 
 # For learning the structure of SPNs
-include("Learning/StructureLearning.jl")
+# include("Learning/StructureLearning.jl")
 include("DataTypes/BayesianNets.jl")
 
 # For generating Dense SPNs (for use e.g. in images)
-include("Learning/DenseSPNs.jl")
+# include("Learning/DenseSPNs.jl")
 
 end # end of module

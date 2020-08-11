@@ -20,9 +20,9 @@ function maxproduct!(evidence::AbstractVector,spn::SumProductNetwork,query::Abst
     while !isempty(stack)
         n = pop!(stack) # remove last
         node = spn[n]
-        if isa(node,SumNode)
+        if issum(node)
             push!(stack,tree[n]) # add selected child
-        elseif isa(node,ProductNode)
+        elseif isprod(node)
             append!(stack,node.children)
         elseif node.scope in query # leaf node with query variable
             evidence[node.scope] = argmax(node)
@@ -47,13 +47,13 @@ function maxproduct!(values::AbstractVector,tree::AbstractVector,spn::SumProduct
     # traverse nodes in reverse topological order (bottom-up)
     for i in length(spn):-1:1
         node = spn[i]
-        if isa(node,ProductNode)
+        if isprod(node)
             logval = 0.0
             for j in node.children
                 @inbounds logval += values[j]
             end
             @inbounds values[i] = isfinite(logval) ? logval : -Inf
-        elseif isa(node,SumNode)
+        elseif issum(node)
             maxval = -Inf
             argval = 0
             for (k,j) in enumerate(node.children)

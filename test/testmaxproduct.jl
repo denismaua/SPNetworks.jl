@@ -1,5 +1,5 @@
 # Test maxproduct algorithm
-import SumProductNetworks: maxproduct!
+import SumProductNetworks.MAP: maxproduct!
 
 @testset "MaxProduct" begin
 

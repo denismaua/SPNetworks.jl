@@ -2,19 +2,20 @@
 
 export
     logpdf, 
-    rand,
-    ncircuits
+    rand
 
 """
   (spn::SumProductNetwork)(x::AbstractVector{<:Real})::Float64
 
 Evaluates the sum-product network at a given instantiation.
 
-`x` is vector of values of variables (integers or reals). Summed-out variables are represented as NaNs
+### Parameters
 
-# Examples
+- `x`: vector of values of variables (integers or reals). Summed-out variables are represented as `NaN`s
 
-To compute the probability of P(b=1) using a spn S, use
+### Examples
+
+To compute the probability of ``P(b=1)`` using a spn `S`, use
 ```julia
 julia> S([NaN, 2]
 0.3
@@ -28,9 +29,11 @@ end
 """
     logpdf(spn, X)
 
-Returns the sums of the log-probabilities of instances x in X.
+Returns the sums of the log-probabilities of instances `x` in `X`.
 
-`X` is matrix of values of variables (integers or reals). Summed-out variables are represented as NaNs.
+### Parameters
+
+- `X`: matrix of values of variables (integers or reals). Summed-out variables are represented as `NaN`s.
 """
 function logpdf(spn::SumProductNetwork, X::AbstractMatrix{<:Real})::Float64
     # single-threaded version
@@ -52,9 +55,11 @@ end
 
 Evaluates the sum-product network `spn` in log domain at configuration `x`.
 
-`x` is vector of values of variables (integers or reals). Summed-out variables are represented as NaNs
+### Parameters
 
-# Examples
+- `x`: vector of values of variables (integers or reals). Summed-out variables are represented as `NaN`s
+
+### Examples
 
 To compute the probability of ``P(b=1)`` using a spn `S`, use
 ```julia
@@ -116,7 +121,11 @@ function sample(weights)::UInt
 end
 
 """
-Sample values from leaves.
+    rand(n::IndicatorFunction)
+    rand(n::CategoricalDistribution)
+    rand(n::GaussianDistribution)
+
+Sample values from sum-product network leaves.
 """
 @inline Base.rand(n::IndicatorFunction) = n.value
 @inline Base.rand(n::CategoricalDistribution) = sample(n.values)
@@ -129,7 +138,7 @@ Returns a sample of values of the variables generated according
 to the probability defined by the network `spn`. Stores the sample
 as a vector of values
 
-# Example
+### Example
 
 ```julia
 julia> rand(spn)
@@ -197,7 +206,7 @@ function Base.rand(spn::SumProductNetwork, N::Integer)
 end
 
 """
-    ncircuits(spn)
+    ncircuits(spn::SumProductNetwork)
 
 Counts the number of induced circuits of the sum-product network `spn`.
 """
@@ -224,11 +233,15 @@ function ncircuits!(values::AbstractVector{Int}, spn::SumProductNetwork)
 end
 
 """
-Computes the average negative loglikelihood of a dataset data assigned by spn.
+    NLL(spn::SumProductNetwork,data::AbstractMatrix{<:Real})
+
+Computes the average negative loglikelihood of a dataset `data` assigned by spn.
 """
 NLL(spn::SumProductNetwork,data::AbstractMatrix{<:Real}) = -logpdf(spn,data)/size(data,1)
 
 """
-Computes the Mean Absolute Error of two SPNs on given data
+    MAE(S1::SumProductNetwork,S2::SumProductNetwork,data::AbstractMatrix{<:Real})
+
+Computes the Mean Absolute Error of sum-product networks `S1` and `S2` on given `data`. 
 """
 MAE(S1::SumProductNetwork,S2::SumProductNetwork,data::AbstractMatrix{<:Real}) = sum( abs(logpdf(S1,view(data,i,:))-logpdf(S2,view(data,i,:))) for i=1:size(data,1))/size(data,1)

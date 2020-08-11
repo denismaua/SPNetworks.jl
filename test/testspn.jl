@@ -1,4 +1,5 @@
 # Test creation and evaluation of SPNs
+import SumProductNetworks: SumNode, ProductNode, CategoricalDistribution, IndicatorFunction, ncircuits
 
 @testset "Defining and evaluating discrete SPNs" begin
     @testset "Simple DAG SPN" begin
