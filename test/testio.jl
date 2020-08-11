@@ -34,10 +34,7 @@
             SPN2 = SumProductNetwork(normpath("$(@__DIR__)/../assets/test.spn"))
             # @info "## Comparing sizes" 
             @test length(SPN) == length(SPN2) == length(S)
-            @test size(SPN) == size(SPN2) == size(S)
-            # @info "## Printing network information"
-            # println(SPN)
-            # println(SPN2)
+            @test nparams(SPN) == nparams(SPN2) == nparams(S)
             @testset "Evaluating simple SPNs at $a,$b" for a in 1:2, b in 1:2
                 pred = SPN2([a,b])
                 ref = SPN([a,b])

@@ -68,7 +68,7 @@ io = IOBuffer("""#
 spn = SumProductNetwork(io)
 @show spn # show some information about network
 for a in 1:2, b in 1:2
-    prob = spn([a,b]) # compute probability of configuration
+    prob = spn(a,b) # compute probability of configuration
     println("spn($a,$b) = $prob")
 end
 
@@ -87,10 +87,11 @@ import SumProductNetworks: SumNode, ProductNode, CategoricalDistribution, Indica
         IndicatorFunction(1,1.0)               # 9
     ]
 )
-# Computing marginal
-value = selspn([1,NaN,NaN])
+# Computing marginal probabilities
+# Summed-out variables are represented as NaN assigmments:
+value = selspn(1,NaN,NaN)
 println("selspn(A=1) = $value") # ≈ 0.6
-# in log-domain
+# or in log-domain
 @show logpdf(selspn,[2,NaN,NaN]) # ≈ log(0.4)
 
 # MAP Inference

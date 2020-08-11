@@ -5,24 +5,31 @@ export
     rand
 
 """
-  (spn::SumProductNetwork)(x::AbstractVector{<:Real})::Float64
+    (spn::SumProductNetwork)(x::AbstractVector{<:Real})
+    (spn::SumProductNetwork)(x...)
 
-Evaluates the sum-product network at a given instantiation.
+Evaluates the sum-product network at a given instantiation `x` of the variables.
+Summed-out variables are represented as `NaN`s.
 
 ### Parameters
 
-- `x`: vector of values of variables (integers or reals). Summed-out variables are represented as `NaN`s
+- `x`: vector of values of variables (integers or reals). 
 
 ### Examples
 
-To compute the probability of ``P(b=1)`` using a spn `S`, use
-```julia
+To compute the probability of ``P(b=1)`` using spn `S`, use
+```jldoctest
 julia> S([NaN, 2]
+0.3
+julia> S(NaN, 2)
 0.3
 ```
 """
-function (spn::SumProductNetwork)(x::AbstractVector{<:Real})::Float64
+function (spn::SumProductNetwork)(x::AbstractVector{<:Real})
     return exp(logpdf(spn,x))
+end
+function (spn::SumProductNetwork)(x...)
+    return exp(logpdf(spn,[x...]))
 end
 
 
@@ -61,8 +68,8 @@ Evaluates the sum-product network `spn` in log domain at configuration `x`.
 
 ### Examples
 
-To compute the probability of ``P(b=1)`` using a spn `S`, use
-```julia
+To compute the probability of ``P(b=1)`` using spn `S`, use
+```jldoctest
 julia> logpdf(S,[NaN, 2])
 -1.2039728043259361
 ```

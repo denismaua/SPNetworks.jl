@@ -17,22 +17,19 @@ import SumProductNetworks: SumNode, ProductNode, CategoricalDistribution, Indica
         )
         @test length(SPN) == 8
         @test ncircuits(SPN) == 3
+        @test nparams(SPN) == 11
         sc = scope(SPN)
         # println("Scope: ", map(string,sc))
         @test (length(sc) == 2) && (1 in sc) && (2 in sc)
         results = [0.3, 0.15, 0.4, 0.15]
         @testset "Evaluation at $a,$b" for a=1:2, b=1:2
-            v = SPN([a,b])
-            @test SPN([a,b]) ≈ results[2*(a-1) + b]
+            # v = SPN(a,b)
+            @test SPN(a,b) ≈ results[2*(a-1) + b]
             @test logpdf(SPN,[a,b]) ≈ log(SPN([a,b]))
         end
         @testset "Marginalization" begin
-            @test SPN([1,NaN]) ≈ 0.45
-            value = SPN([1,NaN])
-            # println("S(A=1) = $value")
-            value = SPN([NaN, 2])
-            # println("S(B=2) = $value")
-            @test SPN([NaN,2]) ≈ 0.3
+            @test SPN(1,NaN) ≈ 0.45
+            @test SPN(NaN,2) ≈ 0.3
             @test logpdf(SPN,[NaN,2]) ≈ log(0.3)  
         end
         @testset "Sampling" begin

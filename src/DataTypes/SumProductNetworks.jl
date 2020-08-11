@@ -2,7 +2,8 @@
 
 export
     SumProductNetwork,
-    scope
+    scope,
+    nparams
 
 
 """
@@ -26,9 +27,33 @@ Computes the number of nodes in the sum-product network `spn`.
 Base.length(spn::SumProductNetwork) = length(nodes(spn))
 
 """
-Get node by index.
+    getindex(spn::SumProductNetwork, i...)
+
+Get node of `spn` by indexes `i`.
+
+### Examples
+
+```julia
+node = spn[1] # returns the root node
+nodes = spn[1,3] # returns the root node and some other
+nodes = spn[1:end] # collects all nodes
+```
 """
 Base.getindex(spn::SumProductNetwork, i...) = getindex(nodes(spn), i...)
+
+"""
+    firstindex(spn::SumProductNetwork)
+
+Return the index of the root node of `spn`.
+"""
+Base.firstindex(spn::SumProductNetwork) = 1
+
+"""
+    lastindex(spn::SumProductNetwork)
+
+Return the index of the last leaf node of the sum-product network `spn`.
+"""
+Base.lastindex(spn::SumProductNetwork) = length(spn)
 
 """
     Traverses network (assumes nodes are topological ordered).
@@ -124,15 +149,16 @@ Return vector of weights associate to outgoing edges of (sum) node n.
 # Return the log-value of the weight associate to edge from `i` to `j`
 # """
 #@inline logweight(spn::SumProductNetwork, i, j) = log(getweight(spn,i,j))
+
 """
-    size(spn)
+    nparams(spn::SumProductNetwork)
 
 Computes the number of parameters in the network `spn`.
 """
-function Base.size(spn::SumProductNetwork)
+function nparams(spn::SumProductNetwork)
     numparams = 0
     for i = 1:length(spn)
-        if isa(spn[i],SumNode)
+        if issum(spn[i])
             numparams += length(children(spn,i))
         elseif isa(spn[i],CategoricalDistribution)
             numparams += length(spn[i].values)
@@ -142,6 +168,8 @@ function Base.size(spn::SumProductNetwork)
     end
     numparams
 end
+
+# Base.ndims(spn::SumProductNetwork) = 
 
 """
     scope(spn)

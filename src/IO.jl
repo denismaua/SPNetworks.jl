@@ -6,27 +6,27 @@ Prints out Node content
 function Base.show(io::IO, n::SumNode)
     print(io,"+")
     for i=1:length(n.children)
-        print(io," $(n.children[i]) $(n.weights[i])")
+        print(io, " $(n.children[i]) $(n.weights[i])")
     end
 end
 
 function Base.show(io::IO, n::ProductNode)
     print(io,"*")
     for i=1:length(n.children)
-        print(io," $(n.children[i])")
+        print(io, " $(n.children[i])")
     end
 end
 function Base.show(io::IO, n::IndicatorFunction)
-    print(io,"indicator $(n.scope) $(n.value)")
+    print(io, "indicator $(n.scope) $(n.value)")
 end
 function Base.show(io::IO, n::CategoricalDistribution)
-    print(io,"categorical $(n.scope)")
+    print(io, "categorical $(n.scope)")
     for v in n.values
         print(io," $v")
     end
 end
 function Base.show(io::IO, n::GaussianDistribution)
-    print(io,"indicator $(n.scope) $(n.mean) $(n.variance)")
+    print(io, "indicator $(n.scope) $(n.mean) $(n.variance)")
 end
 
 """ 
@@ -36,7 +36,7 @@ function Base.show(io::IO, spn::SumProductNetwork)
     #println(io, summary(spn))
     println(io, "Sum-Product Network with:")
     println(io, "│\t$(length(spn)) nodes: $(length(sumnodes(spn))) sums, $(length(productnodes(spn))) products, $(length(leaves(spn))) leaves")
-    println(io, "│\t$(size(spn)) parameters")
+    println(io, "│\t$(nparams(spn)) parameters")
     print(io, "╰\t$(length(scope(spn))) variables")
     #println(io, "\tdepth = $(length(layers(spn)))")
 end
