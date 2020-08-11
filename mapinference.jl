@@ -1,6 +1,6 @@
 # Runs MAP Inference algorithms
 using SumProductNetworks
-import SumProductNetworks: leaves, IndicatorFunction
+import SumProductNetworks: leaves, issum, isprod, IndicatorFunction
 import SumProductNetworks.MAP: maxproduct!, spn2bn
 import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
 
@@ -36,8 +36,9 @@ factors = Dict{String,FactorNode}()
 for v in scope(spn)
     variables["X" * string(v)] = VariableNode(vdims[v])
 end
-for (i,node) in Iterators.reverse(enumerate(spn))
-    println(i, node)
+for i = length(spn):-1:1
+    node = spn[i]
+    println(i, " ", node)
     if issum(node)
         # process sum node
         var = VariableNode(2)
@@ -46,16 +47,19 @@ for (i,node) in Iterators.reverse(enumerate(spn))
         # process product node
         var = VariableNode(2)
         variables["Y"*string(i)] = var
-        factor = FactorNode(zeros(Float64, Tuple(2 for _ = 1:(length(node.children)+1)) ),VariableNode[var ; map(j -> variables[string(j)], node.children)])
-        factor[2:2:(end-1)] .= -Inf
-        factor[end-1] = -Inf
+        factor = FactorNode(zeros(Float64, Tuple(2 for _ = 1:(length(node.children)+1)) ),VariableNode[var ; map(j -> variables["Y"*string(j)], node.children)])
+        factor.factor[2:2:(end-1)] .= -Inf
+        factor.factor[end-1] = -Inf
         factors[string(i)] = factor
     elseif isa(node, IndicatorFunction)
         # process leaf node
-        var = VariableNode(vdims(node.scope))
-        variables[string(i)] = var
+        var = VariableNode(2)
+        variables["Y"*string(i)] = var
         parent = variables["X"*string(node.scope)]
-        factor = FactorNode([], [var, parent])
+        factor = FactorNode(zeros(Float64, 2, vdims[node.scope]), [var, parent])
+        factor.factor[2:2:(end-1)] .= -Inf
+        factor.factor[1,convert(Int,node.value)] = -Inf
+        factor.factor[2,convert(Int,node.value)] = 0.0 
         factors[string(i)] = factor
     else
         @error "Unsupported node type: $(typeof(node))"

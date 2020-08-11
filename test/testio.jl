@@ -16,7 +16,6 @@
 #""")
         S = SumProductNetwork(io)
 
-        #@info "## Creating network from file"
         @testset "Saving to file then reading it" begin
             SPN = SumProductNetwork([
                 SumNode([2,3,4],[0.2,0.5,0.3]),        # 1
@@ -52,55 +51,39 @@
     # end
     # println("Call dot -Tpdf assets/spn.dot -o assets/spn.pdf to generate image")
 
-    # println()
     @testset "XOR SPN" begin
         XOR = SumProductNetwork(normpath("$(@__DIR__)/../assets/xor.spn"))
-        # println("Loading took ", totaltime, "s")
-        # @info "## Printing network information"
-        # println(XOR)
         @testset "Evaluation XOR at $a,$b,$c" for a=1:2, b=1:2, c=1:2
             v = XOR([a,b,c])
-            # println("XOR($a,$b,$c) = $v")
             @test ((a + b + c - 3) % 2 == 1 && v ≈ 0.0) || ((a + b + c - 3) % 2 == 0 && v ≈ 0.25)
         end 
     @test logpdf(XOR,fill(NaN,3)) ≈ 0.0
-    # println()
     end
     
     @testset "HMM SPN"  begin
-        # @info "## Loading network"
         HMM = SumProductNetwork(normpath("$(@__DIR__)/../assets/hmm.spn"))
-        # @info "## Printing network information"
-        # println(HMM)
-
-        # @info "## Testing evaluation"
-
         results = [0.11989139999999997,0.06615860000000003,0.29298060000000004,
                 0.1709694,0.0708666,0.03658340000000001,0.1561014,0.08644860000000001]
         @testset "Evaluating HMM at $a,$b,$c" for a=1:2, b=1:2, c=1:2
             v = HMM([a,b,c])
-            # println("HMM($a,$b,$c) = $v")
             @test v ≈ results[4*(a-1) + 2*(b-1) + c]
         end 
         @test logpdf(HMM,fill(NaN,3)) ≈ 0.0
-        # println()
     end
     
     @testset "Reading Small SPN in pyspn's format" begin
         PySPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/example.pyspn.spn"); offset = 1)
-        # println("Loading took ", totaltime, "s")
-        # println(PySPN)
-        # println("Scope: ", map(string,scope(PySPN)))
+        @test length(PySPN) == 13
         @test length(scope(PySPN)) == 2
-        @test logpdf(PySPN,fill(NaN,10)) ≈ 0.0 atol=1e-6
+        @test nparams(PySPN) == 12
+        @test logpdf(PySPN,[NaN,NaN]) ≈ 0.0 atol=1e-6
+        @test PySPN(2,1) ≈ 0.4
+        @test logpdf(PySPN, [2,NaN]) ≈ log(0.55)
     end
-    # println()
 
-    @testset "# Reading Breast-Cancer SPN in pyspn's format" begin
+    @testset "Reading Breast-Cancer SPN in pyspn's format" begin
         PySPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"); offset = 1)
-        # println(PySPN)
         @test length(scope(PySPN)) == 10
         @test logpdf(PySPN,fill(NaN,10)) ≈ 0.0 atol=1e-6
-        # println()
     end
 end
