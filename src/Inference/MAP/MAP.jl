@@ -8,6 +8,7 @@ import SumProductNetworks:
     isleaf, isprod, issum
 
 include("MaxProduct.jl")
+include("HybridMessagePassing.jl")
 include("SPN2MILP.jl")
 
 end

@@ -90,7 +90,7 @@
     end
     
     @testset "Reading Small SPN in pyspn's format" begin
-        PySPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/example.pyspn.spn"), offset = 1)
+        PySPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/example.pyspn.spn"); offset = 1)
         # println("Loading took ", totaltime, "s")
         # println(PySPN)
         # println("Scope: ", map(string,scope(PySPN)))
@@ -100,7 +100,7 @@
     # println()
 
     @testset "# Reading Breast-Cancer SPN in pyspn's format" begin
-        PySPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"), offset = 1)
+        PySPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"); offset = 1)
         # println(PySPN)
         @test length(scope(PySPN)) == 10
         @test logpdf(PySPN,fill(NaN,10)) ≈ 0.0 atol=1e-6
