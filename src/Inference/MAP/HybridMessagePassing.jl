@@ -9,7 +9,9 @@ function spn2bn(spn::SumProductNetwork)
     # recover dimensionality for each variable
     vdims = SumProductNetworks.vardims(spn)
     variables = Dict{String,VariableNode}()
+    # sizehint!(variables,length(vdims)+length(spn))
     factors = Dict{String,FactorNode}()
+    # sizehint!(factors,length(spn))
     # Add root nodes for manifest variables
     for (v,d) in vdims
         variables["X" * string(v)] = VariableNode(d)

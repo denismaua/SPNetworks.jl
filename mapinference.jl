@@ -1,6 +1,4 @@
 # Runs MAP Inference algorithms
-using Printf # for pretty printing
-
 using SumProductNetworks
 import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction
 import SumProductNetworks.MAP: maxproduct!, spn2bn
@@ -9,7 +7,7 @@ import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode,
 
 # Maximum number of iterations of belief propagation
 # const maxiterations = 10
-maxiterations = 3
+maxiterations = 10
 
 # spn_filename = ARGS[1]
 # spn_filename = "/Users/denis/code/SumProductNetworks/assets/example.pyspn.spn"
@@ -18,18 +16,46 @@ maxiterations = 3
 # query_filename = "/Users/denis/learned-spns/spambase/spambase.query"
 # evid_filename = "/Users/denis/learned-spns/spambase/spambase.evid"
 # nltcs
-# spn_filename = "/Users/denis/learned-spns/nltcs/nltcs.spn"
+# spn_filename = "/Users/denis/learned-spns/nltcs/nltcs.spn2"
 # query_filename = "/Users/denis/learned-spns/nltcs/nltcs.query"
 # evid_filename = "/Users/denis/learned-spns/nltcs/nltcs.evid"
+# hepatitis
+# spn_filename = "/Users/denis/learned-spns/hepatitis/hepatitis.spn2"
+# query_filename = "/Users/denis/learned-spns/hepatitis/hepatitis.query"
+# evid_filename = "/Users/denis/learned-spns/hepatitis/hepatitis.evid"
+# ionosphere
+# spn_filename = "/Users/denis/learned-spns/ionosphere/ionosphere.spn2"
+# query_filename = "/Users/denis/learned-spns/ionosphere/ionosphere.query"
+# evid_filename = "/Users/denis/learned-spns/ionosphere/ionosphere.evid"
 # mushrooms
-spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn"
-query_filename = "/Users/denis/learned-spns/mushrooms/nltcs.query"
-evid_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.evid"
+# spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn2"
+# query_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.query"
+# evid_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.evid"
+# dna
+# spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
+# query_filename = "/Users/denis/learned-spns/dna/dna.query"
+# evid_filename = "/Users/denis/learned-spns/dna/dna.evid"
+# nips
+spn_filename = "/Users/denis/learned-spns/nips/nips.spn2"
+query_filename = "/Users/denis/learned-spns/nips/nips.query"
+evid_filename = "/Users/denis/learned-spns/nips/nips.evid"
+
+println("SPN: ", spn_filename)
 
 # Load SPN from spn file (assume 0-based indexing)
 loadtime = @elapsed spn = SumProductNetwork(spn_filename; offset = 1)
 println("Loaded in $(loadtime)s ", summary(spn))
 nvars = length(scope(spn))
+
+maxch = 0
+for node in spn
+    if !isleaf(node)
+        global maxch = max(maxch, length(node.children))
+    end
+end
+if maxch > 4
+    @warn "maximum node indegree too large: $maxch. It is highly recommend to split nodes before running this."
+end
 
 # Load evidence and query variables
 qfields = split(readline(query_filename))
@@ -61,7 +87,8 @@ printstyled("\nMaxProduct: "; color = :green)
 println("$mpvalue [$(mptime)s]\n")
 
 # Translate SPN into distribution-equivalent Factor Graph
-fg = spn2bn(spn)
+println("Generating factor graph...")
+@time fg = spn2bn(spn)
 
 # consistency checks
 @assert length(fg.variables) == (length(spn) + nvars)
@@ -86,14 +113,13 @@ fmts = [" %2d ", " %8.2f ", " %8.2f ", " %18.16f ", " %7s "]
 bordercolor = :light_cyan
 headercolor = :cyan
 fieldcolor = :normal
-# printstyled("╭────┬──────────┬──────────┬────────────────────┬───────╮\n"; color = :blue)
 printstyled('╭', join(map(w -> repeat('─',w), widths), '┬'), '╮', '\n' ;color = bordercolor)
 for (col,w) in zip(columns,widths)
     printstyled("│"; color = bordercolor)
     printstyled(cpad(col, w); color = headercolor)
 end
 printstyled("│\n"; color = bordercolor)
-printstyled("├────┼──────────┼──────────┼────────────────────┼───────┤\n"; color = bordercolor)
+printstyled('├', join(map(w -> repeat('─',w), widths), '┼'), '┤', '\n' ;color = bordercolor)
 # value of best incumbent solution
 best = -Inf
 start = time_ns()
@@ -148,9 +174,5 @@ for it=1:maxiterations
 end
 printstyled('╰', join(map(w -> repeat('─',w), widths), '┴'), '╯', '\n' ;color = bordercolor)
 
-for i in query
-    x[i] = decode(bp, "X$i")
-    # print("X$i = ", x[i], " ")
-end
 printstyled("Ratio: "; color = :green)
-println( spn(x)/mpvalue )
+println( best/mpvalue )
