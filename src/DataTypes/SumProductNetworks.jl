@@ -169,7 +169,26 @@ function nparams(spn::SumProductNetwork)
     numparams
 end
 
-# Base.ndims(spn::SumProductNetwork) = 
+"""
+    vardims(spn::SumProductNetwork)
+
+Returns a dictionary mapping each variable index to its dimension (no. of values).
+Assigns dimension = -1 for continuous variables.
+"""
+function vardims(spn::SumProductNetwork)
+    vdims = Dict{Int,Int}()
+    for node in leaves(spn)
+        if isa(node, IndicatorFunction)
+            dim = get(vdims, node.scope, 0)
+            vdims[node.scope] = max(dim,convert(Int,node.value))
+        elseif isa(node, CategoricalDistribution)
+            vdims[node.scope] = length(node.values)
+        elseif isa(node, GaussianDistribution)
+            vdims[node.scope] = -1
+        end
+    end
+    vdims
+end
 
 """
     scope(spn)

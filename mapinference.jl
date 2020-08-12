@@ -7,159 +7,150 @@ import SumProductNetworks.MAP: maxproduct!, spn2bn
 import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
 import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode, marginal, setevidence!, setmapvar!
 
+# Maximum number of iterations of belief propagation
+# const maxiterations = 10
+maxiterations = 3
+
 # spn_filename = ARGS[1]
-spn_filename = "/Users/denis/code/SumProductNetworks/assets/example.pyspn.spn"
-# spn_filename = "/Users/denis/learned-spns/spambase/spambase.uai"
+# spn_filename = "/Users/denis/code/SumProductNetworks/assets/example.pyspn.spn"
+# spambase
+# spn_filename = "/Users/denis/learned-spns/spambase/spambase.spn"
+# query_filename = "/Users/denis/learned-spns/spambase/spambase.query"
+# evid_filename = "/Users/denis/learned-spns/spambase/spambase.evid"
+# nltcs
+# spn_filename = "/Users/denis/learned-spns/nltcs/nltcs.spn"
+# query_filename = "/Users/denis/learned-spns/nltcs/nltcs.query"
+# evid_filename = "/Users/denis/learned-spns/nltcs/nltcs.evid"
+# mushrooms
+spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn"
+query_filename = "/Users/denis/learned-spns/mushrooms/nltcs.query"
+evid_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.evid"
 
 # Load SPN from spn file (assume 0-based indexing)
 loadtime = @elapsed spn = SumProductNetwork(spn_filename; offset = 1)
 println("Loaded in $(loadtime)s ", summary(spn))
-# recover dimensionality for each variable
-vdims = Dict{Int,Int}()
-for node in leaves(spn)
-    @assert isa(node, IndicatorFunction)
-    dim = get(vdims, node.scope, 0)
-    vdims[node.scope] = max(dim,convert(Int,node.value))
-end
 nvars = length(scope(spn))
-@assert nvars == length(vdims) "$nvars ≠ $(length(vdims))"
 
 # Load evidence and query variables
-# TODO
-x = ones(Float64, nvars)
-# query = Set(scope(spn))
+qfields = split(readline(query_filename))
+nquery = parse(Int,qfields[1])
+query = Set(map(f -> (parse(Int, f)+1), qfields[2:end]))
+#println(query)
+@assert length(query) == nquery
+
+x = Array{Float64}(undef, nvars)
+fill!(x, NaN) # marginalize non-query, non-evidence
+
+efields = split(readline(evid_filename))
+evidence = Dict{Int,Int}()
+nevid = parse(Int,efields[1])
+for i=2:2:length(efields)
+    var = parse(Int,efields[i]) + 1
+    value = parse(Int,efields[i+1]) + 1
+    x[var] = value
+    evidence[var] = value
+end
+@assert length(evidence) == nevid
+
+#println(x)
 
 # Run max-product 
-# mptime = @elapsed maxproduct!(x, spn, query)
-# println("MaxProduct: $(spn(x)) [$(mptime)s]")
+mptime = @elapsed maxproduct!(x, spn, query)
+mpvalue = spn(x)
+printstyled("\nMaxProduct: "; color = :green)
+println("$mpvalue [$(mptime)s]\n")
 
-# translate spn into bayes net
-variables = Dict{String,VariableNode}()
-factors = Dict{String,FactorNode}()
-# schedule = Vector{Tuple{FGNode,FGNode}}() # downward message scheduling 
-# Add root nodes for manifest variables
-for (v,d) in vdims
-    variables["X" * string(v)] = VariableNode(d)
-end
-for i = length(spn):-1:1
-    node = spn[i]
-    # println(i, " ", node)
-    if issum(node)
-        # process sum node
-        var = VariableNode(2)
-        variables["Y"*string(i)] = var
-        factor = FactorNode(
-            Array{Float64}(undef, Tuple(2 for _ = 1:(length(node.children)+1)) ), # factor
-            VariableNode[var ; map(j -> variables["Y"*string(j)], node.children)] # neighbors
-            )
-        # P(Y=2|parents=z) = sum( node.weights[i] | z[i] = 2 )
-        for z in CartesianIndices(Tuple(2 for _ = 1:length(node.children)))
-            prob = mapreduce(j -> node.weights[j]*(z[j]-1), +, 1:length(z))
-            factor.factor[2,z] = log(prob)
-            factor.factor[1,z] = log(1 - prob)
-        end
-        factors[string(i)] = factor
-        # display(factor.neighbors)
-    elseif isprod(node)
-        # process product node
-        var = VariableNode(2)
-        variables["Y"*string(i)] = var
-        factor = FactorNode(
-            zeros(Float64, Tuple(2 for _ = 1:(length(node.children)+1)) ), # factor
-            VariableNode[var ; map(j -> variables["Y"*string(j)], node.children)] # neighbors
-            )
-        # P(Y=2|parents) = { 1 if all parents = 1, 0 otherwise }
-        factor.factor[2:2:(end-1)] .= -Inf
-        factor.factor[end-1] = -Inf
-        factors[string(i)] = factor
-    elseif isa(node, IndicatorFunction)
-        # process leaf node
-        var = VariableNode(2)
-        variables["Y"*string(i)] = var
-        parent = variables["X"*string(node.scope)]
-        factor = FactorNode(zeros(Float64, 2, vdims[node.scope]), [var, parent])
-        # P(Y=2|parent) = { 1 if parent = node.value, 0 otherwise }
-        factor.factor[2:2:end] .= -Inf
-        factor.factor[1,convert(Int,node.value)] = -Inf
-        factor.factor[2,convert(Int,node.value)] = 0.0 
-        factors[string(i)] = factor
-    else
-        @error "Unsupported node type: $(typeof(node))"
-    end
-end
-@assert length(variables) == (length(spn) + nvars)
-@assert length(factors) == length(spn)
-# Create Factor Graph
-fg = FactorGraph(variables, factors)
+# Translate SPN into distribution-equivalent Factor Graph
+fg = spn2bn(spn)
+
+# consistency checks
+@assert length(fg.variables) == (length(spn) + nvars)
+@assert length(fg.factors) == length(spn)
+
 # Initialize belief propagation
-bp = HybridBeliefPropagation(fg; rndinit = false)
-# bp.normalize = true
-# setevidence!(bp, "X1", 1)
-# setevidence!(bp, "X2", 2)
+bp = HybridBeliefPropagation(fg; rndinit = false) # rndinit = true generates random initial message; = true sets all to 1.
+bp.normalize = true # normalize messages (sum = 1)?
+# Set evidence and query
 setevidence!(bp, "Y1", 2)
+for (v,e) in evidence
+    setevidence!(bp, "X$v", e)
+end
+for v in query
+    setmapvar!(bp, "X$v")
+end
 # run Inference
-printstyled("╭────┬──────────┬────────┬────────────────────┬───────╮\n"; color = :blue)
-printstyled("│ it │   time   │   res  │        value       │ best? │\n"; color = :blue) 
-printstyled("├────┼──────────┼────────┼────────────────────┼───────┤\n"; color = :blue)
+cpad(s, n::Integer, p=" ") = rpad(lpad(s,div(n+length(s),2),p),n,p)
+columns = ["it", "time (s)", "residual", "value", "best?"]
+widths = [4, 10, 10, 20, 7]
+fmts = [" %2d ", " %8.2f ", " %8.2f ", " %18.16f ", " %7s "]
+bordercolor = :light_cyan
+headercolor = :cyan
+fieldcolor = :normal
+# printstyled("╭────┬──────────┬──────────┬────────────────────┬───────╮\n"; color = :blue)
+printstyled('╭', join(map(w -> repeat('─',w), widths), '┬'), '╮', '\n' ;color = bordercolor)
+for (col,w) in zip(columns,widths)
+    printstyled("│"; color = bordercolor)
+    printstyled(cpad(col, w); color = headercolor)
+end
+printstyled("│\n"; color = bordercolor)
+printstyled("├────┼──────────┼──────────┼────────────────────┼───────┤\n"; color = bordercolor)
+# value of best incumbent solution
+best = -Inf
 start = time_ns()
-for it=1:10
+for it=1:maxiterations
     # res = update!(bp)  
     # downward propagation  
     res = 0.0
     for i = length(spn):-1:1
         node = spn[i]
-        # print("$i ", variables["Y$i"])
         # compute incoming messages from children
         if isleaf(node) 
-            factor = factors[string(i)]           
-            update!(bp, variables["X$(node.scope)"], factor)
-            res = max(res, update!(bp, factor, variables["Y$i"]))
+            factor = fg.factors[string(i)]           
+            update!(bp, fg.variables["X$(node.scope)"], factor)
+            res = max(res, update!(bp, factor, fg.variables["Y$i"]))
         else
-            factor = factors[string(i)]
+            factor = fg.factors[string(i)]
             for j in node.children
-                update!(bp, variables["Y$j"], factor)
+                update!(bp, fg.variables["Y$j"], factor)
             end
-            res = max(res, update!(bp, factor, variables["Y$i"]))
+            res = max(res, update!(bp, factor, fg.variables["Y$i"]))
         end
-        # println( marginal(bp, "Y$i") )
     end
     # upward propagation
     for i = 1:length(spn)
         node = spn[i]
         # compute outgoing messages to children
         if isleaf(node)
-            factor = factors[string(i)]
-            update!(bp, variables["Y$i"], factor)
-            res = max(res, update!(bp, factor, variables["X$(node.scope)"]))
+            factor = fg.factors[string(i)]
+            update!(bp, fg.variables["Y$i"], factor)
+            res = max(res, update!(bp, factor, fg.variables["X$(node.scope)"]))
         else
-            factor = factors[string(i)]
-            update!(bp, variables["Y$i"], factor)
+            factor = fg.factors[string(i)]
+            update!(bp, fg.variables["Y$i"], factor)
             for j in node.children
-                res = max(res, update!(bp, factor, variables["Y$j"]))
+                res = max(res, update!(bp, factor, fg.variables["Y$j"]))
             end
         end
     end
     etime = (time_ns()-start)/1e9;
     # prob = marginal(bp,"Y1")[2]
-    # println("$it \t [$(etime)s] \t $res \t $prob")
-    for i = 1:nvars
+    for i in query
         x[i] = decode(bp, "X$i")
     end
     prob = spn(x)
-    # println("$it [", round(etime,digits=3), "s] ", res, " ", prob)    
-    printstyled("│ ", @sprintf("%2d", it), " │ ", @sprintf("%8.2f",etime), " │ "; color = :blue)
-    @printf "%4.4f" res
-    printstyled(" │ "; color = :blue) 
-    @printf "%1.16f" prob
-    # printstyled(IOContext(stdout, :compact => true, :limit => true), res, " | ", prob, " │ ") 
-    # printstyled(sprint(print, it; context = :color => :blue))
-    printstyled(" │       │\n"; color = :blue) 
-    
+    for (col,w) in zip([it, round(etime, digits=2), round(res,digits=2), round(prob, digits=16), prob >= best ? "*" : " "],widths)
+        printstyled("│"; color = bordercolor)
+        printstyled(lpad(col, w-1), ' '; color = fieldcolor)
+    end 
+    printstyled("│\n"; color = bordercolor)
+    global best = max(best, prob)
+    if res < 0.001 break end # early stop
 end
-printstyled("╰────┴──────────┴────────┴────────────────────┴───────╯\n"; color = :blue)
+printstyled('╰', join(map(w -> repeat('─',w), widths), '┴'), '╯', '\n' ;color = bordercolor)
 
-for i = 1:nvars
+for i in query
     x[i] = decode(bp, "X$i")
-    print(x[i], " ")
+    # print("X$i = ", x[i], " ")
 end
-println( spn(x) )
+printstyled("Ratio: "; color = :green)
+println( spn(x)/mpvalue )
