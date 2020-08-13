@@ -18,10 +18,11 @@ struct ProductNode <: Node
     #ProductNode(children::Vector{<:Integer}) = new(children)
     #ProductNode(children) = new(children)
 end
+abstract type LeafNode <: Node end
 """
 Indicator Function Node. Tolerance sets a maximum discrepancy when evaluating the node at a given value. Its default value is 1e-6.
 """
-struct IndicatorFunction <: Node
+struct IndicatorFunction <: LeafNode
     scope::UInt
     value::Float64
     tolerance::Float64
@@ -31,20 +32,20 @@ end
 """
 Univariate Categorical Distribution Node
 """
-struct CategoricalDistribution <: Node
+struct CategoricalDistribution <: LeafNode
     scope::UInt
     values::Vector{Float64}
 end
 """
 Univariate Gaussian Distribution Node
 """
-mutable struct GaussianDistribution <: Node
+mutable struct GaussianDistribution <: LeafNode
     scope::UInt
     mean::Float64
     variance::Float64
 end
 
-LeafNode = Union{IndicatorFunction,CategoricalDistribution,GaussianDistribution}
+# LeafNode = Union{IndicatorFunction,CategoricalDistribution,GaussianDistribution}
 
 """
     IndicatorFunction(x::Vector{<:Real})::Float64

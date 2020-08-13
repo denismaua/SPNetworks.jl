@@ -2,6 +2,8 @@
 import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
 import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode, setevidence!, setmapvar!
 
+# TODO: dichotomize nodes (make max no. of children for inner nodes = 2) 
+
 """
     spn2bn(spn::SumProductNetwork)
 
@@ -23,6 +25,9 @@ function spn2bn(spn::SumProductNetwork)
         # println(i, " ", node)
         if issum(node)
             # process sum node
+            if length(node.children) > 4
+                @warn "node $i indegree is too large: $(length(node.children)). It is highly recommend to split nodes before running this."
+            end
             var = VariableNode(2)
             variables["Y"*string(i)] = var
             factor = FactorNode(
@@ -39,6 +44,9 @@ function spn2bn(spn::SumProductNetwork)
             # display(factor.neighbors)
         elseif isprod(node)
             # process product node
+            if length(node.children) > 4
+                @warn "node $i indegree is too large: $(length(node.children)). It is highly recommend to split nodes before running this."
+            end
             var = VariableNode(2)
             variables["Y"*string(i)] = var
             factor = FactorNode(

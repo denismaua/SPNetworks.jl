@@ -1,5 +1,5 @@
 # Test creation and evaluation of SPNs
-import SumProductNetworks: ncircuits
+import SumProductNetworks: ncircuits, scopes
 
 @testset "Defining and evaluating discrete SPNs" begin
     @testset "Simple DAG SPN" begin
@@ -21,9 +21,20 @@ import SumProductNetworks: ncircuits
         sc = scope(SPN)
         # println("Scope: ", map(string,sc))
         @test (length(sc) == 2) && (1 in sc) && (2 in sc)
+        @testset "Evaluate node scopes" begin
+            scl = scopes(SPN)
+            @test length(scl) == 8
+            @test (length(scl[1]) == 2) && (1 in scl[1]) && (2 in scl[1])
+            @test (length(scl[2]) == 2) && (1 in scl[2]) && (2 in scl[2])
+            @test (length(scl[3]) == 2) && (1 in scl[3]) && (2 in scl[3])
+            @test (length(scl[4]) == 2) && (1 in scl[4]) && (2 in scl[4])
+            @test (length(scl[5]) == 1) && (1 in scl[5])
+            @test (length(scl[6]) == 1) && (1 in scl[6])
+            @test (length(scl[7]) == 1) && (2 in scl[7])
+            @test (length(scl[8]) == 1) && (2 in scl[8])
+        end
         results = [0.3, 0.15, 0.4, 0.15]
         @testset "Evaluation at $a,$b" for a=1:2, b=1:2
-            # v = SPN(a,b)
             @test SPN(a,b) ≈ results[2*(a-1) + b]
             @test logpdf(SPN,[a,b]) ≈ log(SPN([a,b]))
         end
@@ -72,6 +83,15 @@ import SumProductNetworks: ncircuits
         @test length(HMM) == 15
         @test ncircuits(HMM) == 8
         @test length(scope(HMM)) == 3
+        @testset "Evaluate node scopes" begin
+            scl = scopes(HMM)
+            @test length(scl) == 15
+            @test (length(scl[1]) == 3) && (1 in scl[1]) && (2 in scl[1]) && (3 in scl[1])
+            @test (length(scl[5]) == 2) && (2 in scl[5]) && (3 in scl[5]) 
+            @test (length(scl[6]) == 2) && (2 in scl[6]) && (3 in scl[6]) 
+            @test (length(scl[8]) == 2) && (2 in scl[8]) && (3 in scl[8])            
+            @test (length(scl[9]) == 2) && (2 in scl[9]) && (3 in scl[9])            
+        end
         results = [0.11989139999999997,0.06615860000000003,0.29298060000000004,
         0.1709694,0.0708666,0.03658340000000001,0.1561014,0.08644860000000001]
         @testset "Evaluating HMM at $a,$b,$c" for a=1:2, b=1:2, c=1:2

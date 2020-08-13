@@ -16,6 +16,7 @@ combinations and products; leaves represent distributions.
 
 """
 module SumProductNetworks
+
 # required packages
 #using SparseArrays
 using Clustering

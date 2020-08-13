@@ -21,9 +21,10 @@ import SumProductNetworks.MAP: spn2milp
         ]
     )
 
-    buckets = spn2milp(SPN)
-    for (i,b) in enumerate(buckets)
-        println(i, " ", b)
-    end
+    obj = spn2milp(SPN, [6,7,2,9,1,8])
+    println("Objective: ", obj)
+    # for (i,b) in buckets
+    #         println(i, " ", b)
+    # end
 
 end

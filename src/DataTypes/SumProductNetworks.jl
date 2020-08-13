@@ -196,3 +196,23 @@ end
 Returns the scope of network `spn`, given by the scope of its root node.
 """
 scope(spn::SumProductNetwork)::AbstractVector = unique(collect(map(n->scope(n), leaves(spn))))  
+
+"""
+    scopes(spn::SumProductNetwork)
+
+Returns an array of scopes for every node in the `spn` (ordered by their index).
+"""
+function scopes(spn::SumProductNetwork)
+    sclist = Array{Array{Int}}(undef, length(spn))
+    for i = length(spn):-1:1
+        node = spn[i]
+        if isleaf(node)
+            sclist[i] = Int[node.scope]
+        elseif issum(node) # assume completeness
+            sclist[i] = copy(sclist[node.children[1]])
+        else # can probably be done more efficiently
+            sclist[i] = Base.reduce(union, map(j -> sclist[j], node.children)) 
+        end
+    end
+    sclist
+end

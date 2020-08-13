@@ -49,9 +49,9 @@ for node in spn
         global maxch = max(maxch, length(node.children))
     end
 end
-if maxch > 4
-    @warn "maximum node indegree too large: $maxch. It is highly recommend to split nodes before running this."
-end
+# if maxch > 4
+#     @warn "maximum node indegree too large: $maxch. It is highly recommend to split nodes before running this."
+# end
 
 # Load evidence and query variables
 qfields = split(readline(query_filename))
