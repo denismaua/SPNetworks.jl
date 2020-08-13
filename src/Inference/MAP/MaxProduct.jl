@@ -3,7 +3,9 @@
 """
     maxproduct!(evidence,spn,query)
 
-Approximates the maximum value of a configuration of query variables for given some evidence. 
+Approximates the maximum value of a configuration of `query` variables for given some `evidence`. 
+Returns the value achieved by the algorithm at the root node (which is not the value of the configuration in `evidence`) 
+
 
 # Parameters
 - `evidence`: vector of values for each variable; NaN values denote sum-out variables; the algorithm fills-in the values of query variables. 
@@ -33,7 +35,8 @@ end
 """
     maxproduct!(values,tree,spn,query,evidence)
 
-Approximates the maximum value of a configuration of query variables for given some evidence. 
+Approximates the maximum value of a configuration of `query` variables for given some `evidence`.
+Returns the value achieved by the algorithm at the root node (which is not the value of the configuration in `tree`) 
 
 # Parameters
 - `values`: vector of node values (to be computed by algorithm)

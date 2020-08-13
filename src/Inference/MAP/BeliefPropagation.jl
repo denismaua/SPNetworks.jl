@@ -50,7 +50,7 @@ function spn2bn(spn::SumProductNetwork)
             factor.factor[end-1] = -Inf
             factors[string(i)] = factor
         elseif isa(node, IndicatorFunction)
-            # process leaf node
+            # process indicator leaf node
             var = VariableNode(2)
             variables["Y"*string(i)] = var
             parent = variables["X"*string(node.scope)]
@@ -59,6 +59,18 @@ function spn2bn(spn::SumProductNetwork)
             factor.factor[2:2:end] .= -Inf
             factor.factor[1,convert(Int,node.value)] = -Inf
             factor.factor[2,convert(Int,node.value)] = 0.0 
+            factors[string(i)] = factor
+        elseif isa(node, CategoricalDistribution)
+            # process categorical leaf node
+            var = VariableNode(2)
+            variables["Y"*string(i)] = var
+            parent = variables["X"*string(node.scope)]
+            factor = FactorNode(Array{Float64}(undef, 2, vdims[node.scope]), [var, parent])
+            # P(Y=2|parent=j) = node.values[j]
+            for j = 1:vdims[node.scope]
+                factor.factor[2,j] = log(node.values[j])
+                factor.factor[1,j] = log(1.0 - node.values[j])
+            end
             factors[string(i)] = factor
         else
             @error "Unsupported node type: $(typeof(node))"
@@ -83,11 +95,12 @@ Runs mixed belief propagation algorithm with given `spn`, `query` variables and 
 """
 function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, query; maxiterations = 10, verbose = true, normalize = true, lowerbound = false, earlystop = 0.001, rndminit = false)
     # Translate SPN into distribution-equivalent Factor Graph
-    fg, t, bytes, gctime, mallocs = @timed spn2bn(spn)
     if verbose 
+        fg, t, bytes, gctime, mallocs = @timed spn2bn(spn)
         @info "Generated factor graph ($(round(bytes/1048576,digits=1))MiB) in $t secs."
+    else
+        fg = spn2bn(spn) 
     end
-    # fg = spn2bn(spn) 
     # consistency checks
     @assert length(fg.variables) == (length(spn) + length(scope(spn)))
     @assert length(fg.factors) == length(spn)
@@ -190,7 +203,6 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
             best = prob
             x .= y
         end
-        # best = max(best, prob)
         if res < earlystop break end # early stop
     end
     if verbose

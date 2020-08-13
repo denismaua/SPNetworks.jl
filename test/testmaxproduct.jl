@@ -5,8 +5,7 @@ import SumProductNetworks.MAP: maxproduct!
 
     @testset "Discrete SPNs" begin
 
-        @testset "Simple SPN" begin
-            
+        @testset "Simple SPN" begin        
             SPN = SumProductNetwork(
                 [
                     SumNode([2,3,4],[0.2,0.5,0.3]),        # 1
@@ -19,8 +18,6 @@ import SumProductNetworks.MAP: maxproduct!
                     CategoricalDistribution(2, [0.8,0.2])  # 8
                 ]
             )
-            # println(SPN)
-            # println()
             values = Vector{Float64}(undef,length(SPN))
             tree = Vector{UInt}(undef,length(SPN))
             mp = maxproduct!(values,tree,SPN,Set([1,2]),[1,1])
@@ -31,17 +28,13 @@ import SumProductNetworks.MAP: maxproduct!
             @test tree[1] == 3
             evidence = [0.0,0.0]
             mp = maxproduct!(evidence,SPN,Set([1,2]))
-            # println("MaxProduct(A=$(evidence[1]),B=$(evidence[2])) -> $(exp(mp))")
             @test logpdf(SPN,evidence) ≈ log(0.3)
             evidence = [0.0,NaN]
             mp = maxproduct!(evidence,SPN,Set([1]))
-            # println("MaxProduct(A=$(evidence[1])) -> $(exp(mp))")
             @test logpdf(SPN,evidence) ≈ log(0.45)
-            # println()
         end
 
         @testset "Dichotomized version" begin
-
             SPN = SumProductNetwork([
                 SumNode([3,2],[0.2,0.8]),
                 SumNode([4,5],[0.625,0.375]),
@@ -54,17 +47,12 @@ import SumProductNetworks.MAP: maxproduct!
                 CategoricalDistribution(2,[0.8,0.2])
             ]
             )
-            # println(SPN)
-            # println()
-
             evidence = [0.0,0.0]
             mp = maxproduct!(evidence,SPN,Set([1,2]))
-            # println("MaxProduct(A=$(evidence[1]),B=$(evidence[2])) -> $(exp(mp))")
             @test logpdf(SPN,evidence) ≈ log(0.3)
-            # println()
         end        
         @testset "Selective SPN" begin
-            sSPN = SumProductNetwork(
+            SPN = SumProductNetwork(
                 [
                     SumNode([2,3],[0.4,0.6]),              # 1
                     ProductNode([4,5,6]),                  # 2
@@ -77,17 +65,14 @@ import SumProductNetworks.MAP: maxproduct!
                     IndicatorFunction(1,1.0) # 9
                 ]
             )
-            # println(sSPN)
             lmaxv = -Inf
             for a=1:2,b=1:2,c=1:2
-                v = logpdf(sSPN,[a,b,c])
+                v = logpdf(SPN,[a,b,c])
                 lmaxv = v > lmaxv ? v : lmaxv
             end
             evidence = [0.0,0.0,0.0]
-            mp = maxproduct!(evidence,sSPN,Set([1,2,3]))
-            # println("MaxProduct(A=$(evidence[1]),B=$(evidence[2]),C=$(evidence[3])) -> $(exp(mp))")
-            @test logpdf(sSPN,evidence) ≈ lmaxv
-            # println()
+            mp = maxproduct!(evidence,SPN,Set([1,2,3]))
+            @test logpdf(SPN,evidence) ≈ lmaxv
         end
         @testset "Breast-Cancer SPN" begin
             SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"), offset=1)
