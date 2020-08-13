@@ -1,13 +1,9 @@
 # Runs MAP Inference algorithms
 using SumProductNetworks
 import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction
-import SumProductNetworks.MAP: maxproduct!, beliefpropagation! #, spn2bn
-import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
+import SumProductNetworks.MAP: maxproduct!, beliefpropagation! 
+# import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
 # import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode, marginal, setevidence!, setmapvar!, rmevidence!
-
-# Maximum number of iterations of belief propagation
-# const maxiterations = 10
-maxiterations = 5
 
 # spn_filename = ARGS[1]
 # spn_filename = "/Users/denis/code/SumProductNetworks/assets/example.pyspn.spn"
@@ -84,13 +80,13 @@ end
 mptime = @elapsed maxproduct!(x, spn, query)
 mpvalue = spn(x)
 printstyled("\nMaxProduct: "; color = :green)
-println("$mpvalue [$(mptime)s]\n")
+println("$mpvalue [took $(mptime)s]\n")
 
 # Run hybrid belief propagation
 bptime = @elapsed beliefpropagation!(x, spn, query; maxiterations = 3, lowerbound = true, rndminit = false)
 bpvalue = spn(x)
 printstyled("\nBeliefPropagation: "; color = :green)
-println("$bpvalue [$(bptime)s]\n")
+println("$bpvalue [took $(bptime)s]\n")
 
 printstyled("Best Ratio: "; color = :green)
 println( bpvalue/mpvalue )

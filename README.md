@@ -30,10 +30,10 @@ The internal nodes represent convex combinations and products, and the leaves re
 - Marginal inference
 - MAP Inference:
   - MaxProduct
+  - Hybrid Message Passing
   - _TODO_: Local Search
   - _TODO_: ArgMaxProduct
   - _TODO_: SPN2MILP
-  - _TODO_: Hybrid Message Passing
 
 ### Learning
 
