@@ -52,15 +52,25 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     end
     # To map each expression in a leaf into a fresh monomial
     cache = Dict{MLExpr,MLExpr}()
-    function new_monomial(e::MLExpr) 
-        get!(cache,e,MLExpr(1.0,offset+length(cache)+1))
+    function renameleaves(e::MLExpr) 
+        f = get!(cache,e,MLExpr(1.0,offset+length(cache)+1))
+        # TODO generate constraint with JUMP
+        # @variable(model, base_name="$f", lower_bound=0, upper_bound=1)
+        # info = VariableInfo(true, 0, false, 1, false, NaN, false, NaN, false, false)
+        # JuMP.add_variable(model, JuMP.build_variable(error, info), "$f")
+        println("$f = $e")
+        f
     end
-    # To print out constraints using the apply operation
-    dummy = MLExpr(1)
-    function print_constraint(e1::MLExpr, e2::MLExpr) 
-        println(e1, " = ", e2)
-        dummy
-    end
+    # # To generate constraints using the apply operation on ADDs
+    # dummy = MLExpr(1)
+    # function genconstraint(e1::MLExpr, e2::MLExpr)         
+    #     # println(Meta.parse("$e1 = $e2"))
+    #     # println(:($e1 = $e2))
+    #     println("$e1 = $e2")
+    #     # println( join(map(m -> "$(m[2])*$(m[1])", e1),  "+" ), " = ",  join(map(m -> "$(m[2])*$(m[1])", e2),  " + " )  )
+    #     dummy
+    # end
+    # model = Model() # JUMP
     # Run variable elimination to generate constraints
     for i = 1:(length(ordering)-1)
         var = ordering[i] # variable to eliminate
@@ -68,12 +78,12 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         α = reduce(*, buckets[var]; init = ADD.Terminal(MLExpr(1.0)))
         α = ADD.marginalize(α, var)        
         println(α)
-        # Obtain copy with modified leaves
-        β = ADD.apply(new_monomial, α)
+        # Obtain copy with modified leaves and generate constraints
+        β = ADD.apply(renameleaves, α)
         println(β)
         # Print out constraint
         # TODO: replace by symbolic constraint representation (interact with JUMP / Gurobi)
-        ADD.apply(print_constraint, β, α)
+        # ADD.apply(genconstraint, β, α)
         # For standard bucket elimination (generates tree-decomposition)
         # scope = Base.filter(n -> isa(n,ADD.Node), collect(α))
         # if isempty(scope)
@@ -95,6 +105,8 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     # TODO: Interact with gurobi / JUMP
     α = reduce(*, buckets[ordering[end]]; init = ADD.Terminal(MLExpr(1.0)))
     α = ADD.marginalize(α, ordering[end]) 
+    # all_variables(model)
+    ADD.value(α)
 end
 
 """
