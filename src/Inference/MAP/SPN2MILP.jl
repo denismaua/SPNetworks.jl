@@ -3,6 +3,8 @@ import AlgebraicDecisionDiagrams
 # Aliases
 const ADD = AlgebraicDecisionDiagrams
 const MLExpr = ADD.MultilinearExpression
+import JuMP
+# import Gurobi
 
 """
     spn2milp(spn::SumProductNetwork)
@@ -10,7 +12,7 @@ const MLExpr = ADD.MultilinearExpression
 Translates sum-product network `spn` into MAP-equivalent mixed-integer linear program.
 Require that sum nodes have exactly two children.
 """
-function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Integer}}=nothing)
+function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Integer}}=nothing)    
     # obtain scope of every node
     scopes = SumProductNetworks.scopes(spn)
     # Extract ADDs for each variable
@@ -28,13 +30,29 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     for i=1:length(ordering)
         vorder[ordering[i]] = i
     end
+    # Create optimization model (interacts with JUMP / Gurobi)
+    # model = JuMP.Model(Gurobi.Optimizer)
+    model = JuMP.Model()
+
     ## First obtain ADDs for manifest variables
     offset = 0 # offset to apply to variable indices at ADD leaves
     vdims = SumProductNetworks.vardims(spn) # var id => no. of values
     for var in sort(scopes[1])
         # Extract ADD for variable var
         α = ADD.reduce(extractADD!(Dict{Int,ADD.DecisionDiagram{MLExpr}}(), spn, 1, var, scopes, offset))
-        offset += vdims[var]
+        # Create corresponding optimization variables for leaves (interacts with JUMP / Gurobi)
+        map(t -> begin
+            JuMP.@variable(model, base_name="$(ADD.value(t))", binary=true)
+            end, 
+                Base.filter(n -> isa(n,ADD.Terminal), collect(α))
+            )  
+        # add constraint (interacts with JUMP / Gurobi)
+        expr =  Meta.parse( join( map(n -> string(ADD.value(n)), Base.filter(n -> isa(n,ADD.Terminal), collect(α))), " + ") )
+        println( expr )
+        JuMP.@constraint(model, 
+               expr == 1
+        )
+        offset += vdims[var] # update start index for next variable
         # get index of bottom-most variable (highest id of a sum node)
         # id = maximum(ADD.index, Base.filter(n -> isa(n,ADD.Node), collect(α)))  
         # get index of lowest variable according to elimination ordering
@@ -42,7 +60,7 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         @assert length(buckets[id]) == 0 # TODO iterate until finding an empty bucket      
         # associate ADD to corresponding bucket
         push!(buckets[id],α)
-    end
+        end
     ## Then build ADDs for sum nodes (latent variables)
     for id in sumnodes
             # construct ADD
@@ -50,13 +68,17 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # associate ADD to corresponding bucket
         push!(buckets[id],α)
     end
+    
     # To map each expression in a leaf into a fresh monomial
     cache = Dict{MLExpr,MLExpr}()
     function renameleaves(e::MLExpr) 
         f = get!(cache,e,MLExpr(1.0,offset+length(cache)+1))
-        # TODO generate constraint with JUMP
-        # @variable(model, base_name="$f", lower_bound=0, upper_bound=1)
-        # info = VariableInfo(true, 0, false, 1, false, NaN, false, NaN, false, false)
+        # Generate corresponding variable and constraint (interacts with JUMP / Gurobi)
+        # expr = "$f"
+        # JuMP.@variable(model, Meta.parse(expr), lower_bound=0, upper_bound=1)
+        JuMP.@variable(model, base_name="$f", lower_bound=0, upper_bound=1)
+        # JuMP.@constraint(model, Meta.parse("$f = $e"))
+        # info = JuMP.VariableInfo(true, 0, false, 1, false, NaN, false, NaN, false, false)
         # JuMP.add_variable(model, JuMP.build_variable(error, info), "$f")
         println("$f = $e")
         f
@@ -77,10 +99,16 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         printstyled("Eliminate: ", var, "\n"; color = :red)
         α = reduce(*, buckets[var]; init = ADD.Terminal(MLExpr(1.0)))
         α = ADD.marginalize(α, var)        
-        println(α)
-        # Obtain copy with modified leaves and generate constraints
+        # println(α)
+        # Obtain copy with modified leaves and generate constraints (interacts with JUMP / Gurobi)
         β = ADD.apply(renameleaves, α)
-        println(β)
+        # Create corresponding optimization variables for leaves (interacts with JUMP / Gurobi)
+        # map(t -> begin
+        # JuMP.@variable(model, base_name="$t", binary=true)
+        # end, 
+        #     Base.filter(n -> isa(n,ADD.Terminal), collect(β))
+        # )  
+        # println(β)
         # Print out constraint
         # TODO: replace by symbolic constraint representation (interact with JUMP / Gurobi)
         # ADD.apply(genconstraint, β, α)
@@ -95,7 +123,7 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # printstyled("-> $id\n"; color = :green)     
         # 
         # For path decomposition
-        printstyled("-> $(ordering[i+1])\n"; color = :green)     
+        # printstyled("-> $(ordering[i+1])\n"; color = :green)     
         push!(buckets[ordering[i+1]], β)
         # for α in buckets[var]
         #     println(α)
@@ -105,8 +133,13 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     # TODO: Interact with gurobi / JUMP
     α = reduce(*, buckets[ordering[end]]; init = ADD.Terminal(MLExpr(1.0)))
     α = ADD.marginalize(α, ordering[end]) 
-    # all_variables(model)
+    # expr = "$(ADD.value(α))"
+    # obj = JuMP.@variable(model, obj)
+    # JuMP.@constraint(model, Meta.parse(expr) == obj)
+    # JuMP.@objective(model, Max, obj);
+    # @show JuMP.all_variables(model);
     ADD.value(α)
+    model
 end
 
 """
