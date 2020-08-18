@@ -8,7 +8,6 @@ AlgebraicDecisionDiagrams = "fda02c4b-e729-4157-987e-1560c7fe1ac2"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 GraphicalModels = "a9c32ad1-b399-4167-82a9-e18baef426d8"
 Gurobi = "2e9cd046-0924-5485-92f1-d5272153d98b"
-JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]

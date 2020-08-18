@@ -3,8 +3,7 @@ import AlgebraicDecisionDiagrams
 # Aliases
 const ADD = AlgebraicDecisionDiagrams
 const MLExpr = ADD.MultilinearExpression
-import JuMP
-# import Gurobi
+import Gurobi
 
 """
     spn2milp(spn::SumProductNetwork)
@@ -30,9 +29,10 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     for i=1:length(ordering)
         vorder[ordering[i]] = i
     end
-    # Create optimization model (interacts with JUMP / Gurobi)
-    # model = JuMP.Model(Gurobi.Optimizer)
-    model = JuMP.Model()
+    # Create optimization model (interacts with Gurobi.jl)
+    env = Gurobi.Env()
+     # creates an empty model ("milp" is the model name)
+    model = Gurobi.Model(env, "milp", :maximize)
 
     ## First obtain ADDs for manifest variables
     offset = 0 # offset to apply to variable indices at ADD leaves
@@ -42,16 +42,17 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         α = ADD.reduce(extractADD!(Dict{Int,ADD.DecisionDiagram{MLExpr}}(), spn, 1, var, scopes, offset))
         # Create corresponding optimization variables for leaves (interacts with JUMP / Gurobi)
         map(t -> begin
-            JuMP.@variable(model, base_name="$(ADD.value(t))", binary=true)
+            # Gurobi.add_bvar!(model, 0.0)
+            println("binary ", ADD.value(t))
             end, 
                 Base.filter(n -> isa(n,ADD.Terminal), collect(α))
-            )  
+            )              
+        for i=(offset+1):vdims[var]
+            Gurobi.add_bvar!(model, 0.0)
+        end
         # add constraint (interacts with JUMP / Gurobi)
-        expr =  Meta.parse( join( map(n -> string(ADD.value(n)), Base.filter(n -> isa(n,ADD.Terminal), collect(α))), " + ") )
-        println( expr )
-        JuMP.@constraint(model, 
-               expr == 1
-        )
+        Gurobi.add_constr!(model, collect((offset+1):vdims[var]), '=', 1.0)
+        #
         offset += vdims[var] # update start index for next variable
         # get index of bottom-most variable (highest id of a sum node)
         # id = maximum(ADD.index, Base.filter(n -> isa(n,ADD.Node), collect(α)))  
@@ -72,24 +73,34 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     # To map each expression in a leaf into a fresh monomial
     cache = Dict{MLExpr,MLExpr}()
     function renameleaves(e::MLExpr) 
-        f = get!(cache,e,MLExpr(1.0,offset+length(cache)+1))
+        # get!(cache,e,MLExpr(1.0,offset+length(cache)+1))
         # Generate corresponding variable and constraint (interacts with JUMP / Gurobi)
-        # expr = "$f"
-        # JuMP.@variable(model, Meta.parse(expr), lower_bound=0, upper_bound=1)
-        JuMP.@variable(model, base_name="$f", lower_bound=0, upper_bound=1)
-        # JuMP.@constraint(model, Meta.parse("$f = $e"))
-        # info = JuMP.VariableInfo(true, 0, false, 1, false, NaN, false, NaN, false, false)
-        # JuMP.add_variable(model, JuMP.build_variable(error, info), "$f")
+        if haskey(cache, e)
+            return cache[e]
+        end
+        f = MLExpr(1.0,offset+1)        
+        Gurobi.add_cvar!(model, 0.0, 0.0, 1.0) # is it worth adding interval bounds?
+        println("continuous ", f)
+        idx = [offset+1]
+        coeff = [-1.0]
+        for (m,c) in e
+            if length(m.vars) == 1
+                push!(idx, m.vars[1])
+                push!(coeff, 1.0)
+            end
+        end
+        println(idx, coeff)
+        # Gurobi.update_model!(model)
+        # Gurobi.add_constr!(model, idx, coeff, '=', 0.0)
+        # Gurobi.update_model!(model)
+        offset += 1
         println("$f = $e")
         f
     end
     # # To generate constraints using the apply operation on ADDs
     # dummy = MLExpr(1)
     # function genconstraint(e1::MLExpr, e2::MLExpr)         
-    #     # println(Meta.parse("$e1 = $e2"))
-    #     # println(:($e1 = $e2))
     #     println("$e1 = $e2")
-    #     # println( join(map(m -> "$(m[2])*$(m[1])", e1),  "+" ), " = ",  join(map(m -> "$(m[2])*$(m[1])", e2),  " + " )  )
     #     dummy
     # end
     # model = Model() # JUMP
@@ -132,14 +143,10 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     # Objective
     # TODO: Interact with gurobi / JUMP
     α = reduce(*, buckets[ordering[end]]; init = ADD.Terminal(MLExpr(1.0)))
-    α = ADD.marginalize(α, ordering[end]) 
-    # expr = "$(ADD.value(α))"
-    # obj = JuMP.@variable(model, obj)
-    # JuMP.@constraint(model, Meta.parse(expr) == obj)
-    # JuMP.@objective(model, Max, obj);
-    # @show JuMP.all_variables(model);
+    α = ADD.marginalize(α, ordering[end])
+    Gurobi.update_model!(model)
+    @show model
     ADD.value(α)
-    model
 end
 
 """
