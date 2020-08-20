@@ -96,7 +96,6 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         coeff = [-1.0] # coefficients in linear constraint
         for (m,c) in e
             if length(m.vars) == 1
-                # TODO: handle bilinear products
                 push!(idx, m.vars[1])
             else # w = x*y
                 @assert length(m.vars) == 2
@@ -125,13 +124,6 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # println("$f = $e")
         cache[e] = f
     end
-    # # To generate constraints using the apply operation on ADDs
-    # dummy = MLExpr(1)
-    # function genconstraint(e1::MLExpr, e2::MLExpr)         
-    #     println("$e1 = $e2")
-    #     dummy
-    # end
-    # model = Model() # JUMP
     # Run variable elimination to generate constraints
     for i = 1:(length(ordering)-1)
         var = ordering[i] # variable to eliminate
@@ -168,7 +160,6 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # end
     end
     # Objective (last variable elimination)
-    # TODO: Interact with gurobi / JUMP
     α = reduce(*, buckets[ordering[end]]; init = ADD.Terminal(MLExpr(1.0)))
     α = ADD.marginalize(α, ordering[end])
     @assert isa(α,ADD.Terminal)
