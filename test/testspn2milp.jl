@@ -1,5 +1,6 @@
 # Test SPN to MILP translation
 import SumProductNetworks.MAP: spn2milp
+using Gurobi
 
 @testset "SPN2MILP" begin
     # SPN with dichotomic sum nodes (<= 2 children)
@@ -21,8 +22,10 @@ import SumProductNetworks.MAP: spn2milp
         ]
     )
 
-    obj = spn2milp(SPN, [6,7,2,9,1,8])
-    println("Objective: ", obj)
+    model = spn2milp(SPN, [6,7,2,9,1,8])
+    println(model)
+    optimize(model)
+    # println("Objective: ", obj)
     # for (i,b) in buckets
     #         println(i, " ", b)
     # end
