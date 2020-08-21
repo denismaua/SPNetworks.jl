@@ -47,6 +47,15 @@ The internal nodes represent convex combinations and products, and the leaves re
 - Write network to file
 - Write graphviz graphical representation (dot file format)
 
+## Installation
+
+In a julia shell, type `[` to enter the Pkg mode then type
+```julia
+pkg> add https://github.com/denismaua/AlgebraicDecisionDiagrams.jl
+pkg> add https://github.com/denismaua/GraphicalModels.jl
+pkg> add https://github.com/denismaua/SumProductNetworks.jl
+```
+
 ## Basic Usage
 
 ```julia
