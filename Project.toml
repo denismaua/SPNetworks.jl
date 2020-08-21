@@ -12,3 +12,5 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 [compat]
 Clustering = "0.14"
 julia = "1.4"
+GraphicalModels = "0.1.0"
+AlgebraicDecisionDiagrams = "0.1.0"
