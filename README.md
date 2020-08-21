@@ -55,6 +55,7 @@ pkg> add https://github.com/denismaua/AlgebraicDecisionDiagrams.jl
 pkg> add https://github.com/denismaua/GraphicalModels.jl
 pkg> add https://github.com/denismaua/SumProductNetworks.jl
 ```
+You can type `backspace` to leave the Pkg mode.
 
 ## Basic Usage
 
