@@ -18,8 +18,8 @@ end
 # MAP Inference
 @testset "MAP Infrence" begin
     # include("testmaxproduct.jl")
-    # include("testbeliefprop.jl")
-    include("testspn2milp.jl")
+    include("testbeliefprop.jl")
+    # include("testspn2milp.jl")
 end
 
 # @testset "Parameter learning" begin

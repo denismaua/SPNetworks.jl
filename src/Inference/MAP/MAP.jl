@@ -9,6 +9,6 @@ import SumProductNetworks:
 
 include("MaxProduct.jl")
 include("BeliefPropagation.jl")
-include("SPN2MILP.jl")
+# include("SPN2MILP.jl")
 
 end
