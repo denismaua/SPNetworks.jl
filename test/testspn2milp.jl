@@ -23,9 +23,15 @@ using Gurobi
     )
 
     model = spn2milp(SPN, [6,7,2,9,1,8])
-    println(model)
+    # println(model)
     optimize(model)
-    # println("Objective: ", obj)
+     # show results
+    sol = get_solution(model)
+    println("Solution: $(sol)")
+    # show obj value
+    obj = get_objval(model)
+    println("Objective: ", obj)
+    @test obj ≈ 0.4
     # for (i,b) in buckets
     #         println(i, " ", b)
     # end

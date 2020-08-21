@@ -31,6 +31,9 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     end
     # Create optimization model (interacts with Gurobi.jl)
     env = Gurobi.Env()
+    # TODO: allow passing of parameters to solve
+    # setparam!(env, "Method", 2)   # choose to use Barrier method
+    # setparams!(env; IterationLimit=100, Method=1) # set the maximum iterations and choose to use Simplex method
      # creates an empty model ("milp" is the model name)
     model = Gurobi.Model(env, "milp", :maximize)
 
