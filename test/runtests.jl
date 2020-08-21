@@ -7,7 +7,7 @@ import SumProductNetworks: SumNode, ProductNode, CategoricalDistribution, Indica
 @testset "SumProductNetworks.jl" begin
 
 @testset "Creation, evaluation, sampling" begin
-    # include("testspn.jl")
+    include("testspn.jl")
     # include("testgspn.jl")
     # include("testeval.jl")
 end
@@ -18,7 +18,7 @@ end
 # MAP Inference
 @testset "MAP Infrence" begin
     # include("testmaxproduct.jl")
-    include("testbeliefprop.jl")
+    # include("testbeliefprop.jl")
     # include("testspn2milp.jl")
 end
 

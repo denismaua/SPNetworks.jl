@@ -6,18 +6,22 @@ Node Data Structures
 Implement a labeled sparse matrix.
 """
 abstract type Node end
-struct SumNode <:Node
+
+" Sum node data type "
+struct SumNode <: Node
     children::Vector{UInt}
     weights::Vector{Float64}
     # SumNode() = new(Vector{UInt}(),Vector{Float64}())
     # SumNode(children::Vector{<:Integer},weights::Vector{Float64}) = new(children,weights)
 end
+" Product node data type "
 struct ProductNode <: Node
     children::Vector{UInt}
     #ProductNode() = new(Vector{UInt}())
     #ProductNode(children::Vector{<:Integer}) = new(children)
     #ProductNode(children) = new(children)
 end
+" Abstract leaf node type "
 abstract type LeafNode <: Node end
 """
 Indicator Function Node. Tolerance sets a maximum discrepancy when evaluating the node at a given value. Its default value is 1e-6.
