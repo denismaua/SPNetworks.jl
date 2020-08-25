@@ -1,7 +1,7 @@
 # Runs MAP Inference algorithms
 using SumProductNetworks
 import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction
-import SumProductNetworks.MAP: maxproduct!, lsmax!, beliefpropagation! 
+import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation! 
 # import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
 # import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode, marginal, setevidence!, setmapvar!, rmevidence!
 
@@ -10,15 +10,18 @@ import SumProductNetworks.MAP: maxproduct!, lsmax!, beliefpropagation!
 # - ls: Local-Search
 # - bp: belief-propagation
 # each algorithm uses the incumbent solution of previously ran algorithms (so order matters)
-algorithms = [:mp, :bp]
+algorithms = [:mp, :ls, :bp]
+# algorithms = []
 
 # spn_filename = ARGS[1]
+spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn2"
+in_filename = "/Users/denis/code/SPN/mushrooms.map"
 # spn_filename = "/Users/denis/code/SPN/mushrooms.spn2"
 # in_filename = "/Users/denis/code/SPN/mushrooms_scenarios.map"
 # spn_filename = "/Users/denis/code/SPN/nips.spn2"
 # spn_filename = "/Users/denis/code/SPN/bag_50_nips.spn2"
-spn_filename = "/Users/denis/learned-spns/nips/nips.spn2"
-in_filename = "/Users/denis/code/SPN/nips.map"
+# spn_filename = "/Users/denis/learned-spns/nips/nips.spn2"
+# in_filename = "/Users/denis/code/SPN/nips.map"
 # in_filename = "/Users/denis/code/SPN/nips_scenarios.map"
 # nltcs
 # spn_filename = "/Users/denis/learned-spns/nltcs/nltcs.spn2"
@@ -37,6 +40,8 @@ in_filename = "/Users/denis/code/SPN/nips.map"
 # query_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.query"
 # evid_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.evid"
 # dna
+# spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
+# in_filename = "/Users/denis/code/SPN/dna.map"
 # spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
 # query_filename = "/Users/denis/learned-spns/dna/dna.query"
 # evid_filename = "/Users/denis/learned-spns/dna/dna.evid"
@@ -100,18 +105,18 @@ open(in_filename) do io
             evidence[var] = value
         end
         # @assert length(evidence) == nevid
-        # println(
-        #     join(
-        #         setdiff(
-        #             collect(1:nvars), 
-        #             union(query,keys(evidence))
-        #             ) .- 1,
-        #         " "
-        #         )
-        # )
+        println(
+            join(
+                setdiff(
+                    collect(1:nvars), 
+                    union(query,keys(evidence))
+                    ) .- 1,
+                " "
+                )
+        )
         @assert (length(query) + length(marg) + length(evidence)) == nvars
         #println(x)
-
+        mpvalue = 0.0
         for algo in algorithms
             if algo == :mp
                 # Run max-product 
@@ -122,25 +127,32 @@ open(in_filename) do io
                 printstyled("  [took $(mptime)s]\n"; color = :light_black)
             elseif algo == :ls
                 # Run local search
-                lstime = @elapsed lsmax!(x, spn, query)
+                lstime = @elapsed localsearch!(x, spn, query, 30)
                 lsvalue = spn(x)
                 printstyled("\nLocalSearch: "; color = :green)
                 print("$lsvalue")
                 printstyled("  [took $(lstime)s]\n"; color = :light_black)
+                if mpvalue != 0.0
+                    printstyled("Ratio: "; color = :green)
+                    ratio = lsvalue/mpvalue
+                    println( ratio )
+                end
             elseif algo == :bp
                 # Run hybrid belief propagation
                 bptime = @elapsed beliefpropagation!(x, spn, query; 
                     maxiterations = 5, 
                     lowerbound = true, 
-                    warmstart = true,
+                    warmstart = false,
                     rndminit = false)
                 bpvalue = spn(x)
                 printstyled("\nBeliefPropagation: "; color = :green)
                 print("$bpvalue")
                 printstyled("  [took $(bptime)s]\n"; color = :light_black)
-                printstyled("Ratio: "; color = :green)
-                ratio = bpvalue/mpvalue
-                println( ratio )
+                if mpvalue != 0.0
+                    printstyled("Ratio: "; color = :green)
+                    ratio = bpvalue/mpvalue
+                    println( ratio )
+                end
             end
         end
         # for i = 1:10

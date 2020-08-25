@@ -1,7 +1,8 @@
 # Implements a 1-Neighborhod Stochastic Local Search for MAP Inference
+import SumProductNetworks: vardims
 
 """
-    lsmax!(evidence,spn,query)
+    localsearch!(evidence,spn,query)
 
 Performs a local search for the maximum value of a configuration of `query` variables for given some `evidence`. 
 Returns the value and the last configuration visited by the search (the local optimum or maximum iterations limit).
@@ -10,30 +11,40 @@ Returns the value and the last configuration visited by the search (the local op
 - `evidence`: vector of values for each variable; NaN values denote sum-out variables; the algorithm fills-in the values of query variables. 
 - `spn`: sum-product network.
 - `query`: set of variables to be maximized.
+- `maxiterations`: maximum number of iterations [default: 100].
 """
-function lsmax!(evidence::AbstractVector,spn::SumProductNetwork,query::AbstractSet)
+function localsearch!(evidence::AbstractVector,spn::SumProductNetwork,query::AbstractSet,maxiterations=100)
     values = Vector{Float64}(undef,length(spn))
-    ls = localsearch!(values,evidence,spn,query)
+    ls = localsearch!(values,evidence,spn,query,maxiterations)
 end
 """
-    lsmax!(values,tree,spn,query,evidence)
+    localsearch!(values,x,spn,query,maxiterations)
 
     Performs a local search for the maximum value of a configuration of `query` variables for given some `evidence`. 
 Returns the value achieved at the last iteration of the search.
 
 # Parameters
-- `values`: vector of node values (to be computed by algorithm)
-- `evidence`: vector of values for each variable; NaN values denote sum-out variables and the values of query variables are ignored
-- `spn`: sum-product network
-- `query`: set of variables to be maximized
+- `values`: vector of node values (to be computed by algorithm).
+- `x`: vector of values for each variable; NaN values denote sum-out variables and the values of query variables are ignored.
+- `spn`: sum-product network.
+- `query`: set of variables to be maximized.
 - `maxiterations`: maximum number of iterations.
 """
-function lsmax!(values::AbstractVector,evidence::AbstractVector,spn::SumProductNetwork,query::AbstractSet, maxiterations=100)
+function localsearch!(values::AbstractVector,x::AbstractVector,spn::SumProductNetwork,query::AbstractSet, maxiterations)
     @assert length(values) == length(spn) 
-    best = logpdf!(values,evidence)
+    best = logpdf!(values,spn,x)
     vdims = vardims(spn)
     it = 1
+    before = time_ns()
     while it < maxiterations
+        now = time_ns()
+        if (now-before) > 60*1e9
+            # report incumbent result every minute
+            printstyled("[$it/$maxiterations]"; color = :lightcyan)
+            printstyled(" $best "; color = :normal)
+            printstyled("  [$((now-before)*1e-9)s]"; color = :light_black)
+            before = now
+        end
         cur = best
         for var in query
             v = x[var]

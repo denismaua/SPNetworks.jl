@@ -165,7 +165,7 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
         for v in query
             var = fg.variables["X$v"]
             for ne in var.neighbors
-                bp.messages[(var,ne)] .+= 0.5
+                bp.messages[(var,ne)] .+= 1
             end
         end
     end
