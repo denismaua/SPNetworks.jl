@@ -129,7 +129,11 @@ open(in_filename) do io
                 printstyled("  [took $(lstime)s]\n"; color = :light_black)
             elseif algo == :bp
                 # Run hybrid belief propagation
-                bptime = @elapsed beliefpropagation!(x, spn, query; maxiterations = 5, lowerbound = true, rndminit = false)
+                bptime = @elapsed beliefpropagation!(x, spn, query; 
+                    maxiterations = 5, 
+                    lowerbound = true, 
+                    warmstart = true,
+                    rndminit = false)
                 bpvalue = spn(x)
                 printstyled("\nBeliefPropagation: "; color = :green)
                 print("$bpvalue")

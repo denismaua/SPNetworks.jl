@@ -98,10 +98,19 @@ Runs mixed belief propagation algorithm with given `spn`, `query` variables and 
 - `verbose`: whether to output information during inference run [default: `true`]
 - `normalize`: whether to normalize messages [defulat: `true`]
 - `lowerbound`: whether to use the probability of `x` as initial lower bound [default: `false`]
+- `warmstart`: whether to use the configuration of query variables in `x` to initilize messages [default: `false`]
 - `earlystop`: early stop algorithm if residual is below that threshold [default: `0.001`]
 - `rndminit`: whether to use random initialization of messages (rather than constant initialization) [default: `false`]
 """
-function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, query; maxiterations = 10, verbose = true, normalize = true, lowerbound = false, earlystop = 0.001, rndminit = false)
+function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, query; 
+        maxiterations = 10, 
+        verbose = true, 
+        normalize = true, 
+        lowerbound = false, 
+        earlystop = 0.001, 
+        rndminit = false,
+        warmstart = false
+    )
     # Translate SPN into distribution-equivalent Factor Graph
     if verbose 
         fg, t, bytes, gctime, mallocs = @timed spn2bn(spn)
@@ -156,7 +165,7 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
         for v in query
             var = fg.variables["X$v"]
             for ne in var.neighbors
-                bp[(var,ne)] .+= 0.5
+                bp.messages[(var,ne)] .+= 0.5
             end
         end
     end
