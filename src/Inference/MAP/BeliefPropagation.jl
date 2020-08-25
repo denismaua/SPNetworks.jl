@@ -161,6 +161,8 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
     if lowerbound
         # best = spn(x)
         best = logpdf!(values,spn,x)
+    end
+    if warmstart
         # bias messages towards initial configuration
         for v in query
             var = fg.variables["X$v"]

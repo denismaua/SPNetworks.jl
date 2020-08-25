@@ -5,24 +5,46 @@ import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation!
 # import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
 # import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode, marginal, setevidence!, setmapvar!, rmevidence!
 
+maxinstances = 100
+
 # Which algorithms to run?
 # - mp: max-product
 # - ls: Local-Search
 # - bp: belief-propagation
 # each algorithm uses the incumbent solution of previously ran algorithms (so order matters)
-algorithms = [:mp, :ls, :bp]
+# algorithms = [:mp, :ls, :bp]
+# algorithms = [:mp, :bp, :ls]
+algorithms = [:mp, :ls]
 # algorithms = []
 
+# collect results (value and runtime)
+results = Dict{Symbol,Array{Float64}}()
+for algo in algorithms
+    results[algo] = Float64[]
+end
+
 # spn_filename = ARGS[1]
-spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn2"
-in_filename = "/Users/denis/code/SPN/mushrooms.map"
+
+# mushrooms
+# spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn2"
+# in_filename = "/Users/denis/code/SPN/mushrooms.map"
 # spn_filename = "/Users/denis/code/SPN/mushrooms.spn2"
-# in_filename = "/Users/denis/code/SPN/mushrooms_scenarios.map"
+# spn_filename = "/Users/denis/code/SPN/mushrooms.spn"
+spn_filename = "/Users/denis/code/SPN/bag_50_mushrooms.spn2"
+in_filename = "/Users/denis/code/SPN/mushrooms_scenarios.map"
+
+# dna
+# spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
+# in_filename = "/Users/denis/code/SPN/dna.map"
+
+# nips
 # spn_filename = "/Users/denis/code/SPN/nips.spn2"
+# spn_filename = "/Users/denis/code/SPN/nips.spn"
 # spn_filename = "/Users/denis/code/SPN/bag_50_nips.spn2"
 # spn_filename = "/Users/denis/learned-spns/nips/nips.spn2"
 # in_filename = "/Users/denis/code/SPN/nips.map"
 # in_filename = "/Users/denis/code/SPN/nips_scenarios.map"
+
 # nltcs
 # spn_filename = "/Users/denis/learned-spns/nltcs/nltcs.spn2"
 # query_filename = "/Users/denis/learned-spns/nltcs/nltcs.query"
@@ -39,9 +61,6 @@ in_filename = "/Users/denis/code/SPN/mushrooms.map"
 # spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn2"
 # query_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.query"
 # evid_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.evid"
-# dna
-# spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
-# in_filename = "/Users/denis/code/SPN/dna.map"
 # spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
 # query_filename = "/Users/denis/learned-spns/dna/dna.query"
 # evid_filename = "/Users/denis/learned-spns/dna/dna.evid"
@@ -51,6 +70,8 @@ in_filename = "/Users/denis/code/SPN/mushrooms.map"
 # evid_filename = "/Users/denis/learned-spns/nips/nips.evid"
 
 println("SPN: ", spn_filename)
+println("Query: ", in_filename)
+println()
 
 # Load SPN from spn file (assume 0-based indexing)
 loadtime = @elapsed spn = SumProductNetwork(spn_filename; offset = 1)
@@ -70,20 +91,17 @@ x = Array{Float64}(undef, nvars)
 # end
 
 # Load query, evidence and marginalized variables
-open(in_filename) do io
+totaltime = @elapsed open(in_filename) do io
     inst = 1
+    printstyled("╮\n"; color = :red)
     while !eof(io)
-        printstyled(inst; color = :red)
+        # fill!(x, NaN) # reset configuration
+        printstyled("├(", inst, ")\n"; color = :red)
         # Read query variables
         fields = split(readline(io))
         header = fields[1]
         @assert header == "q"
         query = Set(map(f -> (parse(Int, f)+1), fields[2:end]))
-        # nquery = parse(Int,qfields[1])
-        # query = Set(map(f -> (parse(Int, f)+1), qfields[2:end]))
-        #println(query)
-        # @assert length(query) == nquery
-        # fill!(x, NaN) # marginalize non-query, non-evidence
         # Read marginalized variables
         fields = split(readline(io))
         header = fields[1]
@@ -97,7 +115,6 @@ open(in_filename) do io
         evidence = Dict{Int,Int}()
         header = fields[1]
         @assert header == "e"
-        # nevid = parse(Int,efields[1])
         for i=2:2:length(fields)
             var = parse(Int,fields[i]) + 1
             value = parse(Int,fields[i+1]) + 1
@@ -105,71 +122,86 @@ open(in_filename) do io
             evidence[var] = value
         end
         # @assert length(evidence) == nevid
-        println(
-            join(
-                setdiff(
-                    collect(1:nvars), 
-                    union(query,keys(evidence))
-                    ) .- 1,
-                " "
-                )
-        )
+        # println(
+        #     join(
+        #         setdiff(
+        #             collect(1:nvars), 
+        #             union(query,keys(evidence))
+        #             ) .- 1,
+        #         " "
+        #         )
+        # )
         @assert (length(query) + length(marg) + length(evidence)) == nvars
-        #println(x)
         mpvalue = 0.0
         for algo in algorithms
+            printstyled("│\t"; color = :red)
             if algo == :mp
                 # Run max-product 
-                mptime = @elapsed maxproduct!(x, spn, query)
-                mpvalue = spn(x)
-                printstyled("\nMaxProduct: "; color = :green)
-                print("$mpvalue")
-                printstyled("  [took $(mptime)s]\n"; color = :light_black)
+                runtime = @elapsed maxproduct!(x, spn, query)
+                printstyled("MaxProduct: "; color = :green)
             elseif algo == :ls
                 # Run local search
-                lstime = @elapsed localsearch!(x, spn, query, 30)
-                lsvalue = spn(x)
-                printstyled("\nLocalSearch: "; color = :green)
-                print("$lsvalue")
-                printstyled("  [took $(lstime)s]\n"; color = :light_black)
-                if mpvalue != 0.0
-                    printstyled("Ratio: "; color = :green)
-                    ratio = lsvalue/mpvalue
-                    println( ratio )
-                end
+                runtime = @elapsed localsearch!(x, spn, query, 100)
+                printstyled("LocalSearch: "; color = :green)
             elseif algo == :bp
                 # Run hybrid belief propagation
-                bptime = @elapsed beliefpropagation!(x, spn, query; 
+                runtime = @elapsed beliefpropagation!(x, spn, query; 
                     maxiterations = 5, 
-                    lowerbound = true, 
+                    lowerbound = false, 
                     warmstart = false,
                     rndminit = false)
-                bpvalue = spn(x)
-                printstyled("\nBeliefPropagation: "; color = :green)
-                print("$bpvalue")
-                printstyled("  [took $(bptime)s]\n"; color = :light_black)
-                if mpvalue != 0.0
-                    printstyled("Ratio: "; color = :green)
-                    ratio = bpvalue/mpvalue
-                    println( ratio )
-                end
+                printstyled("BeliefPropagation: "; color = :green)
+                # for i = 1:10
+                #     bptime = @elapsed beliefpropagation!(x, spn, query; maxiterations = 10, lowerbound = true, rndminit = true)
+                #     bpvalue = spn(x)
+                #     printstyled("\nBeliefPropagation: "; color = :green)
+                #     print("$bpvalue")
+                #     printstyled("  [took $(bptime)s]\n"; color = :light_black)
+                #     ratio = bpvalue/mpvalue
+                #     println( ratio )
+                # end    
             end
+            value = spn(x)
+            print("$value")
+            printstyled("  [$(runtime)s]\n"; color = :light_black)
+            # push!(results[algo], (value,runtime))
+            push!(results[algo], value)
         end
-        # for i = 1:10
-        #     bptime = @elapsed beliefpropagation!(x, spn, query; maxiterations = 10, lowerbound = true, rndminit = true)
-        #     bpvalue = spn(x)
-        #     printstyled("\nBeliefPropagation: "; color = :green)
-        #     print("$bpvalue")
-        #     printstyled("  [took $(bptime)s]\n"; color = :light_black)
-        #     ratio = bpvalue/mpvalue
-        #     println( ratio )
-        # end    
-
-        # for debuggins, remove this
         inst += 1
-        if inst > 3
+        # if maximum no. of instances is reached, stop
+        if inst > maxinstances
             break
         end
     end
+    printstyled("╯\n"; color = :red)
 end
+insts = length(results[algorithms[1]])
+println("Total time: $(totaltime)s\nTotal instances: $insts")
+cpad(s, n::Integer, p=" ") = rpad(lpad(s,div(n+length(s),2),p),n,p) # for printing centered
+columns = [:it]
+widths = [4]
+for algo in algorithms
+    push!(columns,algo)
+    push!(widths,25)
+end
+bordercolor = :light_cyan
+headercolor = :cyan
+fieldcolor = :normal
+printstyled('╭', join(map(w -> repeat('─',w), widths), '┬'), '╮', '\n' ; color = bordercolor)
+for (col,w) in zip(columns,widths)
+    printstyled("│"; color = bordercolor)
+    printstyled(cpad(string(col), w); color = headercolor)
+end
+printstyled("│\n"; color = bordercolor)
+printstyled('├', join(map(w -> repeat('─',w), widths), '┼'), '┤', '\n' ; color = bordercolor)
+for it = 1:insts
+    values = Any[ it ; [ results[algo][it] for algo in columns[2:end] ] ]
+    for (col,width) in zip(values, widths)
+        printstyled("│"; color = bordercolor)
+        printstyled(lpad(col, width-1), ' '; color = fieldcolor)
+    end 
+    printstyled("│\n"; color = bordercolor)
+end
+printstyled('╰', join(map(w -> repeat('─',w), widths), '┴'), '╯', '\n' ; color = bordercolor)
+
 
