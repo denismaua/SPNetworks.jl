@@ -1,7 +1,7 @@
 # Translates SPN to Bayesian Networks and runs Hybrid-Product Belief Propagation to obtain MAP configuration
 import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
 import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode, setevidence!, setmapvar!
-
+import GraphicalModels.MessagePassing: rmevidence!
 # TODO: dichotomize nodes (make max no. of children for inner nodes = 2) 
 
 """
@@ -145,10 +145,20 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
         printstyled("│\n"; color = bordercolor)
         printstyled('├', join(map(w -> repeat('─',w), widths), '┼'), '┤', '\n' ;color = bordercolor)
     end
+    # for computing logpdf of solution
+    values = Vector{Float64}(undef,length(spn))
     # value of best incumbent solution
     best = -Inf
     if lowerbound
-        best = spn(x)
+        # best = spn(x)
+        best = logpdf!(values,spn,x)
+        # bias messages towards initial configuration
+        for v in query
+            var = fg.variables["X$v"]
+            for ne in var.neighbors
+                bp[(var,ne)] .+= 0.5
+            end
+        end
     end
     y = copy(x) # incumbent solution
     start = time_ns()
@@ -198,7 +208,8 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
         for i in query
             y[i] = decode(bp, "X$i")
         end
-        prob = spn(y)
+        # prob = spn(y)
+        prob = logpdf!(values,spn,y)
         if verbose
             etime = (time_ns()-start)/1e9;
             for (col,w) in zip([it, round(etime, digits=2), round(res,digits=2), prob, prob >= best ? "*" : " "],widths)
@@ -216,5 +227,5 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
     if verbose
         printstyled('╰', join(map(w -> repeat('─',w), widths), '┴'), '╯', '\n' ;color = bordercolor)
     end
-    best
+    exp(best)
 end

@@ -5,10 +5,11 @@ module MAP
 using SumProductNetworks
 import SumProductNetworks: 
     Node, SumNode, ProductNode, LeafNode, CategoricalDistribution, IndicatorFunction, GaussianDistribution,
-    isleaf, isprod, issum
+    isleaf, isprod, issum,
+    logpdf!
 
 include("MaxProduct.jl")
+include("LocalSearch.jl")
 include("BeliefPropagation.jl")
-# include("SPN2MILP.jl")
 
 end
