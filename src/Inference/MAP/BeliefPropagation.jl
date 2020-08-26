@@ -163,7 +163,7 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
         best = logpdf!(values,spn,x)
     end
     if warmstart
-        # bias messages towards initial configuration
+        # bias messages towards initial solution
         for v in query
             var = fg.variables["X$v"]
             for ne in var.neighbors
@@ -174,13 +174,15 @@ function beliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, qu
     y = copy(x) # incumbent solution
     start = time_ns()
     for it=1:maxiterations
-        # if it == 1
-        #     for v in query
-        #         setevidence!(bp, "X$v", x[v])
-        #     end
-        # elseif it == 2
-        #     for v in query
-        #         rmevidence!(bp, "X$v")
+        # if warmstart
+        #     if it == 1
+        #         for v in query
+        #             setevidence!(bp, "X$v", x[v])
+        #         end
+        #     elseif it == 2
+        #         for v in query
+        #             rmevidence!(bp, "X$v")
+        #         end
         #     end
         # end
         # downward propagation  

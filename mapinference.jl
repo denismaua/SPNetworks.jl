@@ -2,10 +2,15 @@
 using SumProductNetworks
 import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction
 import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation! 
-# import GraphicalModels: FactorGraph, FGNode, VariableNode, FactorNode
-# import GraphicalModels.MessagePassing: HybridBeliefPropagation, update!, decode, marginal, setevidence!, setmapvar!, rmevidence!
 
-maxinstances = 100
+if length(ARGS) < 2
+    println("Usage: julia --color=yes mapinference.jl spn_filename query_filename")
+    exit()
+end
+spn_filename = ARGS[1]
+q_filename = ARGS[2]
+
+maxinstances = 2
 
 # Which algorithms to run?
 # - mp: max-product
@@ -13,8 +18,8 @@ maxinstances = 100
 # - bp: belief-propagation
 # each algorithm uses the incumbent solution of previously ran algorithms (so order matters)
 # algorithms = [:mp, :ls, :bp]
-# algorithms = [:mp, :bp, :ls]
-algorithms = [:mp, :ls]
+algorithms = [:mp, :bp, :ls]
+# algorithms = [:mp, :ls]
 # algorithms = []
 
 # collect results (value and runtime)
@@ -23,54 +28,8 @@ for algo in algorithms
     results[algo] = Float64[]
 end
 
-# spn_filename = ARGS[1]
-
-# mushrooms
-# spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn2"
-# in_filename = "/Users/denis/code/SPN/mushrooms.map"
-# spn_filename = "/Users/denis/code/SPN/mushrooms.spn2"
-# spn_filename = "/Users/denis/code/SPN/mushrooms.spn"
-spn_filename = "/Users/denis/code/SPN/bag_50_mushrooms.spn2"
-in_filename = "/Users/denis/code/SPN/mushrooms_scenarios.map"
-
-# dna
-# spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
-# in_filename = "/Users/denis/code/SPN/dna.map"
-
-# nips
-# spn_filename = "/Users/denis/code/SPN/nips.spn2"
-# spn_filename = "/Users/denis/code/SPN/nips.spn"
-# spn_filename = "/Users/denis/code/SPN/bag_50_nips.spn2"
-# spn_filename = "/Users/denis/learned-spns/nips/nips.spn2"
-# in_filename = "/Users/denis/code/SPN/nips.map"
-# in_filename = "/Users/denis/code/SPN/nips_scenarios.map"
-
-# nltcs
-# spn_filename = "/Users/denis/learned-spns/nltcs/nltcs.spn2"
-# query_filename = "/Users/denis/learned-spns/nltcs/nltcs.query"
-# evid_filename = "/Users/denis/learned-spns/nltcs/nltcs.evid"
-# hepatitis
-# spn_filename = "/Users/denis/learned-spns/hepatitis/hepatitis.spn2"
-# query_filename = "/Users/denis/learned-spns/hepatitis/hepatitis.query"
-# evid_filename = "/Users/denis/learned-spns/hepatitis/hepatitis.evid"
-# ionosphere
-# spn_filename = "/Users/denis/learned-spns/ionosphere/ionosphere.spn2"
-# query_filename = "/Users/denis/learned-spns/ionosphere/ionosphere.query"
-# evid_filename = "/Users/denis/learned-spns/ionosphere/ionosphere.evid"
-# mushrooms
-# spn_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.spn2"
-# query_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.query"
-# evid_filename = "/Users/denis/learned-spns/mushrooms/mushrooms.evid"
-# spn_filename = "/Users/denis/learned-spns/dna/dna.spn2"
-# query_filename = "/Users/denis/learned-spns/dna/dna.query"
-# evid_filename = "/Users/denis/learned-spns/dna/dna.evid"
-# nips
-# spn_filename = "/Users/denis/learned-spns/nips/nips.spn2"
-# query_filename = "/Users/denis/learned-spns/nips/nips.query"
-# evid_filename = "/Users/denis/learned-spns/nips/nips.evid"
-
 println("SPN: ", spn_filename)
-println("Query: ", in_filename)
+println("Query: ", q_filename)
 println()
 
 # Load SPN from spn file (assume 0-based indexing)
@@ -91,7 +50,7 @@ x = Array{Float64}(undef, nvars)
 # end
 
 # Load query, evidence and marginalized variables
-totaltime = @elapsed open(in_filename) do io
+totaltime = @elapsed open(q_filename) do io
     inst = 1
     printstyled("╮\n"; color = :red)
     while !eof(io)
@@ -147,19 +106,28 @@ totaltime = @elapsed open(in_filename) do io
                 # Run hybrid belief propagation
                 runtime = @elapsed beliefpropagation!(x, spn, query; 
                     maxiterations = 5, 
-                    lowerbound = false, 
-                    warmstart = false,
+                    lowerbound = true, 
+                    verbose = true,
+                    warmstart = true,
                     rndminit = false)
                 printstyled("BeliefPropagation: "; color = :green)
-                # for i = 1:10
-                #     bptime = @elapsed beliefpropagation!(x, spn, query; maxiterations = 10, lowerbound = true, rndminit = true)
-                #     bpvalue = spn(x)
-                #     printstyled("\nBeliefPropagation: "; color = :green)
-                #     print("$bpvalue")
-                #     printstyled("  [took $(bptime)s]\n"; color = :light_black)
-                #     ratio = bpvalue/mpvalue
-                #     println( ratio )
+                # for i = 1:30
+                #     bptime = @elapsed beliefpropagation!(x, spn, query; 
+                #              maxiterations = 3, 
+                #              lowerbound = true, 
+                #              warmstart = false,
+                #              verbose = false,
+                #              rndminit = true)
+                #     value = spn(x)
+                #     print("$value")
+                #     printstyled("  [$(bptime)s]\n"; color = :light_black)
                 # end    
+                # runtime = @elapsed beliefpropagation!(x, spn, query; 
+                # maxiterations = 5, 
+                # lowerbound = true, 
+                # warmstart = true,
+                # rndminit = false)
+                # printstyled("BeliefPropagation: "; color = :green)
             end
             value = spn(x)
             print("$value")
@@ -175,11 +143,12 @@ totaltime = @elapsed open(in_filename) do io
     end
     printstyled("╯\n"; color = :red)
 end
+# display sumary of results
 insts = length(results[algorithms[1]])
 println("Total time: $(totaltime)s\nTotal instances: $insts")
 cpad(s, n::Integer, p=" ") = rpad(lpad(s,div(n+length(s),2),p),n,p) # for printing centered
 columns = [:it]
-widths = [4]
+widths = [5]
 for algo in algorithms
     push!(columns,algo)
     push!(widths,25)
@@ -202,6 +171,12 @@ for it = 1:insts
     end 
     printstyled("│\n"; color = bordercolor)
 end
+printstyled('├', join(map(w -> repeat('─',w), widths), '┼'), '┤', '\n' ; color = bordercolor)
+values = Any[ "avg" ; [ sum(results[algo])/insts for algo in columns[2:end] ] ]
+for (col,width) in zip(values, widths)
+    printstyled("│"; color = bordercolor)
+    printstyled(lpad(col, width-1), ' '; color = headercolor)
+end 
+printstyled("│\n"; color = bordercolor)
 printstyled('╰', join(map(w -> repeat('─',w), widths), '┴'), '╯', '\n' ; color = bordercolor)
-
 
