@@ -42,7 +42,7 @@ function localsearch!(values::AbstractVector,x::AbstractVector,spn::SumProductNe
             # report incumbent result every minute
             printstyled("[$it/$maxiterations]"; color = :lightcyan)
             printstyled(" $best "; color = :normal)
-            printstyled("  [$((now-before)*1e-9)s]"; color = :light_black)
+            printstyled("  [$((now-before)*1e-9)s]\n"; color = :light_black)
             before = now
         end
         cur = best

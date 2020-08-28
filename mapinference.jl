@@ -1,7 +1,7 @@
 # Runs MAP Inference algorithms
 using SumProductNetworks
 import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction
-import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation! 
+import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation!, treebeliefpropagation! 
 
 if length(ARGS) < 2
     println("Usage: julia --color=yes mapinference.jl spn_filename query_filename")
@@ -10,7 +10,7 @@ end
 spn_filename = ARGS[1]
 q_filename = ARGS[2]
 
-maxinstances = 2
+maxinstances = 10
 
 # Which algorithms to run?
 # - mp: max-product
@@ -18,9 +18,11 @@ maxinstances = 2
 # - bp: belief-propagation
 # each algorithm uses the incumbent solution of previously ran algorithms (so order matters)
 # algorithms = [:mp, :ls, :bp]
-algorithms = [:mp, :bp, :ls]
+# algorithms = [:mp, :bp]
+# algorithms = [:mp, :bp, :ls]
+algorithms = [:mp, :tbp, :ls]
 # algorithms = [:mp, :ls]
-# algorithms = []
+# algorithms = [:mp]
 
 # collect results (value and runtime)
 results = Dict{Symbol,Array{Float64}}()
@@ -128,6 +130,15 @@ totaltime = @elapsed open(q_filename) do io
                 # warmstart = true,
                 # rndminit = false)
                 # printstyled("BeliefPropagation: "; color = :green)
+            elseif algo == :tbp
+                # Run hybrid belief propagation (numerically unstable but more efficient)
+                runtime = @elapsed treebeliefpropagation!(x, spn, query; 
+                    maxiterations = 5, 
+                    lowerbound = true, 
+                    verbose = true,
+                    warmstart = false,
+                    rndminit = false)
+                printstyled("BeliefPropagation: "; color = :green)                
             end
             value = spn(x)
             print("$value")

@@ -87,7 +87,7 @@ function sort!(spn::SumProductNetwork)
     # Kanh's algorithm: collect node ids in topological BFS order
     open = Vector{Int}()
     # visited = Set{Int}()
-    closed = Vector{Int}() # bfs order
+    closed = Vector{Int}() # topo bfs order
     push!(open, root) # enqueue root node 
     while !isempty(open)
         n = popfirst!(open) # dequeue node

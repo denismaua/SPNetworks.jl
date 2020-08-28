@@ -20,26 +20,29 @@ end
 #     w .-= log(s) + offset # this computes logw
 #     we .*= 1/s
 # end
-# """
-#     logΣexp, Σ = logsumexp!(p::WeightedParticles)
-# Return log(∑exp(w)). Modifies the weight vector to `w = exp(w-offset)`
-# Uses a numerically stable algorithm with offset to control for overflow and `log1p` to control for underflow.
+"""
+    logsumexp(x)
+
+Returns `log(sum(exp.(x)))`. Uses a numerically stable algorithm.
 
 # References:
-# https://arxiv.org/pdf/1412.8695.pdf eq 3.8 for p(y)
-# https://discourse.julialang.org/t/fast-logsumexp/22827/7?u=baggepinnen for stable logsumexp
-# """
-# function logsumexp!(p::WeightedParticles)
-#     N = length(p)
-#     w = p.logweights
-#     offset, maxind = findmax(w)
-#     w .= exp.(w .- offset)
-#     Σ = sum_all_but(w,maxind) # Σ = ∑wₑ-1
-#     log1p(Σ) + offset, Σ+1
-# end
-# function sum_all_but(w,i)
-#     w[i] -= 1
-#     s = sum(w)
-#     w[i] += 1
-#     s
-# end
+- https://arxiv.org/pdf/1412.8695.pdf eq 3.8
+- https://discourse.julialang.org/t/fast-logsumexp/22827/7?u=baggepinnen for stable logsumexp
+"""
+function logsumexp(x::AbstractVector{<:Real})
+    offset, maxind = findmax(x) # offset controls for overflow
+    w = exp.(x .- offset) # Note: maximum(w) = 1
+    Σ = sum_all_but(w, maxind) # Σ = sum(w)-1
+    log1p(Σ) + offset #, Σ+1 # log1p controls for underflow
+end
+"""
+    sum_all_but(x,i)
+
+Computes `sum(x) - x[i]`.
+"""
+function sum_all_but(x,i)
+    x[i] -= 1
+    s = sum(x)
+    x[i] += 1
+    s
+end
