@@ -216,3 +216,76 @@ function scopes(spn::SumProductNetwork)
     end
     sclist
 end
+
+
+"""
+    project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVector)
+
+Returns the projection of a _normalized_ `spn` onto the scope of `query` by removing marginalized subnetworks of marginalized variables and reducing subnetworks with fixed `evidence`.
+Marginalized variables are the ones that are not in `query` and are assigned `NaN` in `evidence`. 
+The projected spn assigns the same values to configurations that agree on evidence and marginalized variables w.r.t. to `evidence`.
+The scope of the generated network contains query and evidence variables, but not marginalized variables.
+"""
+function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVector)
+    nodes = Dict{UInt,Node}()
+    # evaluate network to collect node values
+    vals = Array{Float64}(undef, length(spn))
+    SumProductNetworks.logpdf!(vals, spn, evidence);
+    # collect marginalized variables
+    marginalized = Set(Base.filter(i -> (isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))
+    # collect evidence variables
+    evidvars = Set(Base.filter(i -> (!isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))
+    println(marginalized)
+    nscopes = scopes(spn)
+    newid = length(spn) + 1 # unused id for new node
+    stack = UInt[ 1 ]    
+    while !isempty(stack)
+        n = pop!(stack)
+        node = spn[n]
+        if isprod(node)
+            children = UInt[]
+            for ch in node.children
+                if !isempty(nscopes[ch] ∩ query)
+                    # subnetwork contains query variables, keep it
+                    push!(children, ch)
+                    push!(stack, ch)
+                else # Replace node with subnetwork of equal value
+                    for e in (evidvars ∩ nscopes[ch])
+                        if !haskey(nodes, ch) # only if we haven't already done this
+                            nodes[ch] = SumNode([newid, newid+1], [exp(vals[ch]), 1.0-exp(vals[ch])])
+                            nodes[newid] = IndicatorFunction(e, evidence[e])
+                            nodes[newid+1] = IndicatorFunction(e, NaN) # arbitrary different value
+                            newid += 2                                                        
+                        end
+                        push!(children, ch)
+                    end
+                end
+            end
+            nodes[n] = ProductNode(children)
+        else 
+            if issum(node)
+                append!(stack, node.children)
+            end
+            nodes[n] = deepcopy(node)
+        end
+    end
+    # Reassign indices so that the become contiguous    
+    # Sorted list of remaining node ids -- position in list gives new index
+    nodeid = Base.sort!(collect(keys(nodes)))
+    idmap = Dict{UInt,UInt}()
+    for (newid, oldid) in enumerate(nodeid)
+        idmap[oldid] = newid
+    end
+    # Now remap ids of children nodes
+    for node in values(nodes)
+        if !isleaf(node)
+            for (i, ch) in enumerate(node.children)
+                node.children[i] = idmap[ch]
+            end
+        end
+    end
+    # println(idmap)
+    spn = SumProductNetwork([ nodes[i] for i in nodeid ])
+    sort!(spn) # ensure nodes are topologically sorted (with ties broken by bfs-order)
+    spn    
+end

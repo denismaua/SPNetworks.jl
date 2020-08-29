@@ -19,8 +19,8 @@ maxinstances = 30
 # each algorithm uses the incumbent solution of previously ran algorithms (so order matters)
 # algorithms = [:mp, :ls, :bp]
 # algorithms = [:mp, :bp]
-algorithms = [:mp, :bp, :ls]
-# algorithms = [:mp, :tbp, :ls]
+# algorithms = [:mp, :bp, :ls]
+algorithms = [:mp, :tbp, :ls]
 # algorithms = [:mp, :ls]
 # algorithms = [:mp]
 

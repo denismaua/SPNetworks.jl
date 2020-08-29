@@ -42,6 +42,7 @@ function Base.summary(io::IO, spn::SumProductNetwork)
     print(io, "╰\t$(length(scope(spn))) variables")
     #println(io, "\tdepth = $(length(layers(spn)))")
 end
+Base.summary(spn::SumProductNetwork) = Base.summary(stdout, spn)
 
 """ 
     show(io::IO, spn::SumProductNetwork)
