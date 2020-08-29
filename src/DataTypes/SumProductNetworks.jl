@@ -271,6 +271,12 @@ function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVec
                     end
                 end
             end
+            # TODO: Eliminate product nodes with single child
+            # if length(children) == 1
+            #     nodes[n] = spn[children[1]]
+            # else
+                # nodes[n] = ProductNode(children)
+            # end
             nodes[n] = ProductNode(children)
         else 
             if issum(node)
@@ -289,6 +295,94 @@ function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVec
     # Now remap ids of children nodes
     for node in values(nodes)
         if !isleaf(node)
+            # if length(node.children) < 2
+            #     println(node)
+            # end
+            for (i, ch) in enumerate(node.children)
+                node.children[i] = idmap[ch]
+            end
+        end
+    end
+    # println(idmap)
+    spn = SumProductNetwork([ nodes[i] for i in nodeid ])
+    # println(spn)
+    sort!(spn) # ensure nodes are topologically sorted (with ties broken by bfs-order)
+    spn    
+end
+
+# Alternative implementation that maintains scopes of nodes
+function project2(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVector)
+    nodes = Dict{UInt,Node}()
+    # evaluate network to collect node values
+    vals = Array{Float64}(undef, length(spn))
+    SumProductNetworks.logpdf!(vals, spn, evidence);
+    # println(exp(vals[1]))
+    # collect marginalized variables
+    marginalized = Set(Base.filter(i -> (isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))
+    # collect evidence variables
+    evidvars = Set(Base.filter(i -> (!isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))
+    # println(query)
+    # println(evidvars)
+    # println(marginalized)
+    nscopes = scopes(spn)
+    newid = length(spn) + 1 # unused id for new node
+    stack = UInt[ 1 ]
+    cache = Dict{UInt, UInt}() # cache indicator nodes created for enconding evidence
+    while !isempty(stack)
+        n = pop!(stack)
+        node = spn[n]
+        if isprod(node)
+            children = UInt[]
+            for ch in node.children
+                if !isempty(nscopes[ch] ∩ query)
+                    # subnetwork contains query variables, keep it
+                    push!(children, ch)
+                    push!(stack, ch)
+                else # Replace node with subnetwork of equal value
+                    e_in_node = (evidvars ∩ nscopes[ch])
+                    if !isempty(e_in_node) # if there are evidence variables in node's scope
+                        # replace it with equivalent fragment 
+                        if !haskey(nodes, ch) # only if we haven't already done this
+                            nodes[ch] = SumNode([newid, newid+1], [exp(vals[ch]), 1.0-exp(vals[ch])])
+                            nodes[newid] = lpn = ProductNode([])
+                            nodes[newid+1] = rpn = ProductNode([])
+                            newid += 2
+                            for e in e_in_node
+                                if !haskey(cache, e) # create indicator nodes
+                                    nodes[newid] = IndicatorFunction(e, evidence[e])
+                                    nodes[newid+1] = IndicatorFunction(e, evidence[e]+1) # arbitrary different value
+                                    cache[e] = newid
+                                    newid += 2                                                        
+                                end
+                                push!(lpn.children, cache[e])
+                                push!(rpn.children, cache[e]+1)
+                            end
+                        end
+                        push!(children, ch)
+                    end
+                end
+            end
+            nodes[n] = ProductNode(children)
+        else 
+            if issum(node)
+                append!(stack, node.children)
+            end
+            nodes[n] = deepcopy(node)
+        end
+    end
+    # Reassign indices so that the become contiguous    
+    # Sorted list of remaining node ids -- position in list gives new index
+    nodeid = Base.sort!(collect(keys(nodes)))
+    idmap = Dict{UInt,UInt}()
+    for (newid, oldid) in enumerate(nodeid)
+        idmap[oldid] = newid
+    end
+    # Now remap ids of children nodes
+    for node in values(nodes)
+        if !isleaf(node)
+            # if length(node.children) < 2
+            #     println(node)
+            # end
             for (i, ch) in enumerate(node.children)
                 node.children[i] = idmap[ch]
             end
