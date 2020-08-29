@@ -10,7 +10,7 @@ end
 spn_filename = ARGS[1]
 q_filename = ARGS[2]
 
-maxinstances = 10
+maxinstances = 30
 
 # Which algorithms to run?
 # - mp: max-product
@@ -19,8 +19,8 @@ maxinstances = 10
 # each algorithm uses the incumbent solution of previously ran algorithms (so order matters)
 # algorithms = [:mp, :ls, :bp]
 # algorithms = [:mp, :bp]
-# algorithms = [:mp, :bp, :ls]
-algorithms = [:mp, :tbp, :ls]
+algorithms = [:mp, :bp, :ls]
+# algorithms = [:mp, :tbp, :ls]
 # algorithms = [:mp, :ls]
 # algorithms = [:mp]
 

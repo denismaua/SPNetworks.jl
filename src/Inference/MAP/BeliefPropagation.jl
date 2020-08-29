@@ -488,7 +488,7 @@ function treebeliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork
         prob = π[1]
         value = spn(y)
         if verbose
-            printstyled("[$iteration/$maxiterations]"; color = :blue)
+            printstyled("[$iteration/$maxiterations] "; color = :blue)
             printstyled("Root Prob: "; color = :light_cyan)
             print(prob)
             printstyled("\t Value: "; color = :light_cyan) 
