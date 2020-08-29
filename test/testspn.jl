@@ -103,7 +103,20 @@ import SumProductNetworks: ncircuits, scopes
         # println("HMM(X1=1) ≈ $(HMM([1,NaN,NaN]))")
         @test logpdf(HMM,[1,NaN,NaN]) ≈ log(0.65)
         x = rand(HMM)
-        @test length(x) == 3    
+        @test length(x) == 3  
+        x[3] = NaN
+        # project/prune network
+        prunedHMM = SumProductNetworks.project(HMM, Set([1]), x)
+        @testset "Projection" for a = 1:2
+            x[1] = a            
+            @test HMM(x) ≈ prunedHMM(x)
+        end
+        x = [1.0, 1.0, 2.0]
+        prunedHMM = SumProductNetworks.project(HMM, Set([1]), x)
+        @testset "Projection" for a = 1:2
+            x[1] = a            
+            @test HMM(x) ≈ prunedHMM(x)
+        end
     end # end of HMM testset
     @testset "Selective SPN" begin    
         selSPN = SumProductNetwork(

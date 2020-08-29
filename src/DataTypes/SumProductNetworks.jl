@@ -231,14 +231,18 @@ function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVec
     # evaluate network to collect node values
     vals = Array{Float64}(undef, length(spn))
     SumProductNetworks.logpdf!(vals, spn, evidence);
+    # println(exp(vals[1]))
     # collect marginalized variables
     marginalized = Set(Base.filter(i -> (isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))
     # collect evidence variables
     evidvars = Set(Base.filter(i -> (!isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))
-    println(marginalized)
+    # println(query)
+    # println(evidvars)
+    # println(marginalized)
     nscopes = scopes(spn)
     newid = length(spn) + 1 # unused id for new node
-    stack = UInt[ 1 ]    
+    stack = UInt[ 1 ]
+    cache = Dict{UInt, UInt}() # cache indicator nodes created for enconding evidence
     while !isempty(stack)
         n = pop!(stack)
         node = spn[n]
@@ -250,12 +254,18 @@ function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVec
                     push!(children, ch)
                     push!(stack, ch)
                 else # Replace node with subnetwork of equal value
-                    for e in (evidvars ∩ nscopes[ch])
+                    e_in_node = (evidvars ∩ nscopes[ch])
+                    if !isempty(e_in_node) # if there are evidence variables in node's scope
+                        # replace it with equivalent fragment 
                         if !haskey(nodes, ch) # only if we haven't already done this
-                            nodes[ch] = SumNode([newid, newid+1], [exp(vals[ch]), 1.0-exp(vals[ch])])
-                            nodes[newid] = IndicatorFunction(e, evidence[e])
-                            nodes[newid+1] = IndicatorFunction(e, NaN) # arbitrary different value
-                            newid += 2                                                        
+                            e = first(e_in_node)
+                            if !haskey(cache, e) # create indicator nodes
+                                nodes[newid] = IndicatorFunction(e, evidence[e])
+                                nodes[newid+1] = IndicatorFunction(e, evidence[e]+1) # arbitrary different value
+                                cache[e] = newid
+                                newid += 2                                                        
+                            end
+                            nodes[ch] = SumNode([cache[e], cache[e]+1], [exp(vals[ch]), 1.0-exp(vals[ch])])
                         end
                         push!(children, ch)
                     end
@@ -286,6 +296,7 @@ function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVec
     end
     # println(idmap)
     spn = SumProductNetwork([ nodes[i] for i in nodeid ])
+    # println(spn)
     sort!(spn) # ensure nodes are topologically sorted (with ties broken by bfs-order)
     spn    
 end
