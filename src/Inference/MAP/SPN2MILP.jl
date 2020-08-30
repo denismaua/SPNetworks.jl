@@ -3,7 +3,6 @@ import AlgebraicDecisionDiagrams
 # Aliases
 const ADD = AlgebraicDecisionDiagrams
 const MLExpr = ADD.MultilinearExpression
-import Gurobi
 
 """
     spn2milp(spn::SumProductNetwork)
@@ -22,56 +21,32 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     # TODO: Apply min-fill or min-degree heuristic to obtain better elimination ordering
     # variable elimination sequence
     if isnothing(ordering) # if no ordering is given, obtain one
-        ordering = sort(sumnodes, rev=true) # eliminate bottom-most variables first
+        ## Domain graph
+        graph = Dict{Int,Set{Int}}( i => Set{Int}() for i in sumnodes )
     end
-    @assert length(ordering) == length(sumnodes) 
-    vorder = Dict{Int,Int}() # ordering of elimination of each variable (inverse mapping)
-    for i=1:length(ordering)
-        vorder[ordering[i]] = i
-    end
-    # Create optimization model (interacts with Gurobi.jl)
-    env = Gurobi.Env()
-    # TODO: allow passing of parameters to solve
-    # setparam!(env, "Method", 2)   # choose to use Barrier method
-    # setparams!(env; IterationLimit=100, Method=1) # set the maximum iterations and choose to use Simplex method
-     # creates an empty model ("milp" is the model name)
-    model = Gurobi.Model(env, "milp", :maximize)
-
     ## First obtain ADDs for manifest variables
     offset = 0 # offset to apply to variable indices at ADD leaves
     vdims = SumProductNetworks.vardims(spn) # var id => no. of values
+    pool = ADD.DecisionDiagram{MLExpr}[]
     for var in sort(scopes[1])
         # Extract ADD for variable var
         α = ADD.reduce(extractADD!(Dict{Int,ADD.DecisionDiagram{MLExpr}}(), spn, 1, var, scopes, offset))
-        # Create corresponding optimization variables for leaves (interacts with Gurobi)
-        # TODO: map optimization variables to spn variable assignment (var,value)
-        # map(t -> begin
-        #     # Gurobi.add_bvar!(model, 0.0)
-        #     println("binary ", ADD.value(t))
-        #     end, 
-        #         Base.filter(n -> isa(n,ADD.Terminal), collect(α))
-        #     )              
-        for i=1:vdims[var]
-            # syntax: model, coefficient in objective
-            Gurobi.add_bvar!(model, 0.0)
-        end
-        # add constraint (interacts with Gurobi)
-        # Gurobi.add_constr!(model, collect((offset+1):vdims[var]), '=', 1.0)
-        idx = collect((offset+1):(offset+vdims[var]))
-        coeff = ones(Float64, length(idx))
-        # print(idx, coeff)
-        # syntax: variables ids, coefficients, comparison (<,>,=), right-hand side constant
-        Gurobi.add_constr!(model, idx, coeff, '=', 1.0)
-        #
         offset += vdims[var] # update start index for next variable
-        # # get index of bottom-most variable (highest id of a sum node)
-        # id = maximum(ADD.index, Base.filter(n -> isa(n,ADD.Node), collect(α)))  
-        # # get index of lowest variable according to elimination ordering
-        i,id = minimum(n -> (vorder[ADD.index(n)],ADD.index(n)), Base.filter(n -> isa(n,ADD.Node), collect(α)))  
-        @assert length(buckets[id]) == 0 # TODO iterate until finding an empty bucket      
-        # associate ADD to corresponding bucket
-        push!(buckets[id],α)
-        end
+        # Create corresponding optimization variables for leaves (interacts with Gurobi)
+        map(t -> begin
+            println("binary ", ADD.value(t))
+            end, 
+                Base.filter(n -> isa(n,ADD.Terminal), collect(α))
+            )          
+        push!(pool, α)
+        if isnothing(ordering)
+            # update domain graph (connect variables in the ADD's scope)
+            sc = map(ADD.index, Base.filter(n -> isa(n,ADD.Node), collect(α)))
+            for i in sc
+                union!(graph[i],sc)
+            end
+        end        
+    end
     ## Then build ADDs for sum nodes (latent variables)
     for id in sumnodes
         # construct ADD
@@ -79,7 +54,35 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # associate ADD to corresponding bucket
         push!(buckets[id],α)
     end
-    
+    # Find variable elimination sequence
+    if isnothing(ordering)
+        ordering = Int[]
+        sizehint!(ordering, length(sumnodes))
+        while !isempty(graph)
+            # find minimum degree node -- break ties by depth/variable id
+            deg, k = minimum( p -> (length(p[2]), -p[1]), graph )
+            j = -k
+            push!(ordering, j)
+            # remove j and incident edges
+            for k in graph[j]
+                setdiff!(graph[k], j)
+            end
+            delete!(graph, j)
+        end 
+    end    
+    @assert length(ordering) == length(sumnodes) 
+    vorder = Dict{Int,Int}() # ordering of elimination of each variable (inverse mapping)
+    for i=1:length(ordering)
+        vorder[ordering[i]] = i
+    end      
+    # Add ADDs to appropriate buckets
+    for α in pool
+        # get index of first variable to be eliminated
+        i, id = minimum(n -> (vorder[ADD.index(n)],ADD.index(n)), Base.filter(n -> isa(n,ADD.Node), collect(α)))
+        push!(buckets[id], α)
+    end
+    # release pool of ADDs to be collected by garbage collector
+    pool = nothing    
     # To map each expression in a leaf into a fresh monomial
     cache = Dict{MLExpr,MLExpr}()
     bilinterms = Dict{ADD.Monomial,Int}()
@@ -91,15 +94,15 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         end
         # Generate corresponding variable and constraint (interacts with Gurobi)
         f = MLExpr(1.0,offset+1)  
-        # syntax is model, coeefficient in objective, [lowerbound, upper bound]
-        Gurobi.add_cvar!(model, 0.0) # is it worth adding lower bounds? upper bounds?
         offset += 1 # increase opt var counter
         # println("continuous ", f)
         idx = [offset] # indices of variables in constraint
         coeff = [-1.0] # coefficients in linear constraint
+        terms = String[]
         for (m,c) in e
             if length(m.vars) == 1
-                push!(idx, m.vars[1])
+                # push!(idx, m.vars[1])
+                push!(terms, "$(c)$(m)")
             else # w = x*y
                 @assert length(m.vars) == 2
                 # Assumes both variables have domain [0,1]
@@ -107,47 +110,37 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
                 if haskey(bilinterms,m)
                     id = bilinterms[m] # id of w
                 else # add continuous variable w to problem with 0 ≤ w ≤ 1
-                    Gurobi.add_cvar!(model, 0.0, 0.0, 1.0) # add new variable representing bilinear term
                     offset += 1
                     id = offset # id of w
                     bilinterms[m] = id
                 end
+                push!(terms, "$(c)χ$(id)")
                 push!(idx, id)
                 # w - x ≤ 0 
-                Gurobi.add_constr!(model,[id, m.vars[1]], [1.0, -1.0], '<', 0.0)
+                println("χ$(id) - χ$(m.vars[1]) <= 0.0")
                 # w - y ≤ 0 
-                Gurobi.add_constr!(model,[id, m.vars[2]], [1.0, -1.0], '<', 0.0)
+                println("χ$(id) - χ$(m.vars[2]) <= 0.0")
                 # w - y - x ≥ -1
-                Gurobi.add_constr!(model,[id, m.vars[1], m.vars[2]], [1.0, -1.0, -1.0], '>', -1.0)
+                println("χ$(id) - χ$(m.vars[1]) - χ$(m.vars[1]) >= -1")
             end
             push!(coeff, c)
         end
         # println(idx, coeff)
-        Gurobi.add_constr!(model, idx, coeff, '=', 0.0)
-        # println("$f = $e")
+        # for (i,c) in zip(idx, coeff)
+        #     print("$c χ$(id) + ")
+        # end
+        println("$f = ", join(terms, " + "))
         cache[e] = f
     end
     # Run variable elimination to generate constraints
-    for i = 1:(length(ordering)-1)
+    α = ADD.Terminal(MLExpr(1.0))
+    for i = 1:length(ordering)
         var = ordering[i] # variable to eliminate
         printstyled("Eliminate: ", var, "\n"; color = :red)
-        α = reduce(*, buckets[var]; init = ADD.Terminal(MLExpr(1.0)))
+        α = α * reduce(*, buckets[var]; init = ADD.Terminal(MLExpr(1.0)))
         α = ADD.marginalize(α, var)        
         # Obtain copy with modified leaves and generate constraints (interacts with JUMP / Gurobi)
-        β = ADD.apply(renameleaves, α)
-        # For path decomposition, add "message" to next bucket to be processed
-        # printstyled("-> $(ordering[i+1])\n"; color = :green)     
-        push!(buckets[ordering[i+1]], β)
-        # Create corresponding optimization variables for leaves (interacts with JUMP / Gurobi)
-        # map(t -> begin
-        # JuMP.@variable(model, base_name="$t", binary=true)
-        # end, 
-        #     Base.filter(n -> isa(n,ADD.Terminal), collect(β))
-        # )  
-        # println(β)
-        # Print out constraint
-        # TODO: replace by symbolic constraint representation (interact with JUMP / Gurobi)
-        # ADD.apply(genconstraint, β, α)
+        α = ADD.apply(renameleaves, α)
         # For standard bucket elimination (generates tree-decomposition)
         # scope = Base.filter(n -> isa(n,ADD.Node), collect(α))
         # if isempty(scope)
@@ -157,50 +150,9 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # end   
         # push!(buckets[id], β) 
         # printstyled("-> $id\n"; color = :green)     
-        # 
-        # for α in buckets[var]
-        #     println(α)
-        # end
     end
-    # Objective (last variable elimination)
-    α = reduce(*, buckets[ordering[end]]; init = ADD.Terminal(MLExpr(1.0)))
-    α = ADD.marginalize(α, ordering[end])
-    @assert isa(α,ADD.Terminal)
-    # Add equality constraint to represent objective
-    Gurobi.add_cvar!(model, 1.0)
-    offset += 1
-    idx = [offset]
-    coeff = [-1.0]
-    for (m, c) in ADD.value(α)
-        if length(m.vars) == 1
-            push!(idx, m.vars[1])
-        else # w = x*y
-            @assert length(m.vars) == 2
-            # Assumes both variables have domain [0,1]
-            # Might lead to unfeasible program if this is violated
-            if haskey(bilinterms,m)
-                id = bilinterms[m] # id of w
-            else # add continuous variable w to problem with 0 ≤ w ≤ 1
-                Gurobi.add_cvar!(model, 0.0, 0.0, 1.0) # add new variable representing bilinear term
-                offset += 1
-                id = offset # id of w
-                bilinterms[m] = id
-            end
-            push!(idx, id)
-            # w - x ≤ 0 
-            Gurobi.add_constr!(model,[id, m.vars[1]], [1.0, -1.0], '<', 0.0)
-            # w - y ≤ 0 
-            Gurobi.add_constr!(model,[id, m.vars[2]], [1.0, -1.0], '<', 0.0)
-            # w - y - x ≥ -1
-            Gurobi.add_constr!(model,[id, m.vars[1], m.vars[2]], [1.0, -1.0, -1.0], '>', -1.0)
-        end        
-        push!(coeff, c)
-    end
-    # println(idx,' ', coeff)
-    Gurobi.add_constr!(model, idx, coeff, '=', 0.0)
-    Gurobi.update_model!(model)
-    # ADD.value(α)
-    model
+    println("Objective: ", ADD.value(α))
+    ADD.value(α)
 end
 
 """

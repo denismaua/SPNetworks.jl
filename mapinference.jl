@@ -1,6 +1,6 @@
 # Runs MAP Inference algorithms
 using SumProductNetworks
-import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction, project, project2
+import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction, project
 import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation!, treebeliefpropagation! 
 
 if length(ARGS) < 2
@@ -22,7 +22,7 @@ end
 # algorithms = [:mp, :ls, :bp]
 # algorithms = [:mp, :bp]
 # algorithms = [:mp, :bp, :ls]
-algorithms = [:mp, :ls, :prunedbp, :bp, :tbp]
+algorithms = [:mp, :ls, :bp, :tbp]
 # algorithms = [:mp, :ls]
 # algorithms = [:mp]
 
@@ -113,9 +113,11 @@ totaltime = @elapsed open(q_filename) do io
                 runtime += @elapsed localsearch!(x, spn2, query, 100)
                 printstyled("LocalSearch: "; color = :green)
             elseif algo == :prunedbp
+                # Note: project2 makes network nonbinary, and creates large potentials!
+                # TODO: re-binarize network.
                 # Run hybrid belief propagation with pruned network
                 print("Pruning spn...")
-                runtime = @elapsed spn2 = project2(spn, query, x)
+                runtime = @elapsed spn2 = project(spn, query, x)
                 println("done: $(runtime)s")
                 runtime += @elapsed beliefpropagation!(x, spn2, query; 
                     maxiterations = 10, 
@@ -135,7 +137,11 @@ totaltime = @elapsed open(q_filename) do io
                     warmstart = true,
                     rndminit = false)
                 # printstyled("BeliefPropagation: "; color = :green)
-                runtime += @elapsed localsearch!(x, spn, query, 100)
+                # First prune network (discard constant and marginalized subnetworks)
+                print("Pruning spn...")
+                runtime = @elapsed spn2 = project(spn, query, x)
+                println("done: $(runtime)s")
+                runtime += @elapsed localsearch!(x, spn2, query, 100)
                 printstyled("BeliefPropagation+LocalSearch: "; color = :green)
                 # for i = 1:30
                 #     bptime = @elapsed beliefpropagation!(x, spn, query; 
