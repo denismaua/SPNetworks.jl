@@ -33,10 +33,10 @@ Get node of `spn` by indexes `i`.
 
 ### Examples
 
-```julia
-node = spn[1] # returns the root node
-nodes = spn[1,3] # returns the root node and some other
-nodes = spn[1:end] # collects all nodes
+```jldoctest
+julia> node = spn[1] # returns the root node
+julia> nodes = spn[1,3] # returns the root node and some other
+julia> nodes = spn[1:end] # collects all nodes
 ```
 """
 Base.getindex(spn::SumProductNetwork, i...) = getindex(nodes(spn), i...)

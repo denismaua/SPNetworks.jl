@@ -35,14 +35,22 @@ end
 Print out information about the network `spn` to stream `io`
 """
 function Base.summary(io::IO, spn::SumProductNetwork)
-    #println(io, summary(spn))
-    println(io, "Sum-Product Network with:")
-    println(io, "│\t$(length(spn)) nodes: $(length(sumnodes(spn))) sums, $(length(productnodes(spn))) products, $(length(leaves(spn))) leaves")
-    println(io, "│\t$(nparams(spn)) parameters")
-    print(io, "╰\t$(length(scope(spn))) variables")
+    len, lensum, lenprod, lenleaves = length(spn), length(sumnodes(spn)), length(productnodes(spn)), length(leaves(spn))
+    lenvars = length(scope(spn))
+    print(io, "Sum-Product Network with ", len, (len==1 ? " node" : " nodes"), " (", lensum, (lensum==1 ? " sum" : " sums"), ", ", lenprod, (lenprod==1 ? " product" : " products"), ", ", lenleaves, (lenleaves==1 ? " leaf" : " leaves"), ") and ", lenvars, (lenvars==1 ? " variable" : " variables"))
+    # print(io, "Sum-Product Network with $(length(spn)) nodes ($(length(sumnodes(spn))) sums, $(length(productnodes(spn))) products, $(length(leaves(spn))) leaves), $(nparams(spn)) parameters, and $(length(scope(spn))) variables")
+    # #println(io, summary(spn))
+    # println(io, "Sum-Product Network with:")
+    # println(io, "│\t$(length(spn)) nodes: $(length(sumnodes(spn))) sums, $(length(productnodes(spn))) products, $(length(leaves(spn))) leaves")
+    # println(io, "│\t$(nparams(spn)) parameters")
+    # println(io, "╰\t$(length(scope(spn))) variables")
     #println(io, "\tdepth = $(length(layers(spn)))")
 end
-Base.summary(spn::SumProductNetwork) = Base.summary(stdout, spn)
+# function Base.summary(spn::SumProductNetwork) 
+#     io = IOBuffer()
+#     print(io, "Sum-Product Network with $(length(spn)) nodes ($(length(sumnodes(spn))) sums, $(length(productnodes(spn))) products, $(length(leaves(spn))) leaves), $(nparams(spn)) parameters, and $(length(scope(spn))) variables.")
+#     String(take!(io))    
+# end
 
 """ 
     show(io::IO, spn::SumProductNetwork)
@@ -50,8 +58,73 @@ Base.summary(spn::SumProductNetwork) = Base.summary(stdout, spn)
 Print the nodes of the network `spn` to stream `io`
 """
 function Base.show(io::IO, spn::SumProductNetwork) 
+    println(io, "SumProductNetwork(IOBuffer(\"\"\"# ", summary(spn))
     for (i, node) in enumerate(spn)
         println(io, i, " ", node)
+    end
+    print(io,"\"\"\"))")
+    # print(io, summary(spn))
+end
+function Base.show(io::IO, ::MIME"text/plain", spn::SumProductNetwork) 
+    # recur_io = IOContext(io)
+    recur_io = IOContext(io, :SHOWN_SET => spn)
+    limit::Bool = get(io, :limit, false)
+    if !haskey(io, :compact)
+        recur_io = IOContext(recur_io, :compact => true)
+    end
+    summary(io, spn)
+    print(io, ":")
+    # print(io, "\n  1: ", spn[1])
+    # println(io, "Sum-Product Network with:")
+    # println(io, "│\t$(length(spn)) nodes: $(length(sumnodes(spn))) sums, $(length(productnodes(spn))) products, $(length(leaves(spn))) leaves")
+    # println(io, "│\t$(nparams(spn)) parameters")
+    # println(io, "╰\t$(length(scope(spn))) variables")
+    if limit
+        sz = displaysize(io)
+        rows, cols = sz[1] - 3, sz[2]
+        rows < 4   && (print(io, " …"); return)
+        cols -= 5 # Subtract the width of prefix "  " and separator " : "
+        cols < 12  && (cols = 12) # Minimum widths of 2 for id, 4 for value
+        rows -= 1 # Subtract the summary
+
+       # determine max id width to align the output, caching the strings
+       ks = Vector{String}(undef, min(rows, length(spn)))
+       vs = Vector{String}(undef, min(rows, length(spn)))
+       keylen = 0
+       vallen = 0
+       for (i, n) in enumerate(spn)
+           i > rows && break
+           ks[i] = sprint(show, i, context=recur_io, sizehint=0)
+           vs[i] = sprint(show, n, context=recur_io, sizehint=0)
+           keylen = clamp(length(ks[i]), keylen, cols)
+           vallen = clamp(length(vs[i]), vallen, cols)
+       end
+       if keylen > max(div(cols, 2), cols - vallen)
+           keylen = max(cld(cols, 3), cols - vallen)
+       end        
+    else
+        rows = cols = typemax(Int)
+    end
+    for (i, node) in enumerate(spn)
+        print(io, "\n  ")
+        if i == rows < length(spn)
+            print(io, rpad("⋮", keylen), " : ⋮")
+            # print(io, rpad("⋮", 2))
+            break
+        end
+        if limit
+            key = rpad(Base._truncate_at_width_or_chars(ks[i], keylen, "\r\n"), keylen)
+        else
+            key = sprint(show, i, context=recur_io, sizehint=0)
+        end
+        print(recur_io, key)
+        print(io, " : ")
+        if limit
+            val = Base._truncate_at_width_or_chars(vs[i], cols - keylen, "\r\n")
+            print(io, val)
+        else
+            show(recur_io, n)
+        end
     end
 end
 
@@ -98,7 +171,7 @@ function SumProductNetwork(io::IO=stdin; offset::Integer = 0)
                 node = CategoricalDistribution(varid,[ parse(Float64,value) for value in fields[4:end] ])
             elseif nodetype == 'i' || nodetype == 'l'
                 varid = parse(Int,fields[3]) + offset
-                value = parse(Int,fields[4]) + offset
+                value = parse(Float64,fields[4]) + offset
                 node = IndicatorFunction(varid,value)
             elseif nodetype == 'g'
                 # TODO: read Gaussian leaves
