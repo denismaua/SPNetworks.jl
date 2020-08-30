@@ -1,16 +1,18 @@
 # Runs MAP Inference algorithms
 using SumProductNetworks
-import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction
+import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction, project, project2
 import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation!, treebeliefpropagation! 
 
 if length(ARGS) < 2
-    println("Usage: julia --color=yes mapinference.jl spn_filename query_filename")
+    println("Usage: julia --color=yes mapinference.jl spn_filename query_filename [maxinstances]")
     exit()
 end
 spn_filename = ARGS[1]
 q_filename = ARGS[2]
-
-maxinstances = 30
+maxinstances = 100
+if length(ARGS) > 2
+    maxinstances = parse(Int, ARGS[3])
+end
 
 # Which algorithms to run?
 # - mp: max-product
@@ -20,7 +22,7 @@ maxinstances = 30
 # algorithms = [:mp, :ls, :bp]
 # algorithms = [:mp, :bp]
 # algorithms = [:mp, :bp, :ls]
-algorithms = [:mp, :tbp, :ls]
+algorithms = [:mp, :ls, :prunedbp, :bp, :tbp]
 # algorithms = [:mp, :ls]
 # algorithms = [:mp]
 
@@ -32,6 +34,8 @@ end
 
 println("SPN: ", spn_filename)
 println("Query: ", q_filename)
+println("MaxInstances: ", maxinstances)
+println("Algorithms:", algorithms)
 println()
 
 # Load SPN from spn file (assume 0-based indexing)
@@ -101,18 +105,38 @@ totaltime = @elapsed open(q_filename) do io
                 runtime = @elapsed maxproduct!(x, spn, query)
                 printstyled("MaxProduct: "; color = :green)
             elseif algo == :ls
+                # First prune network (discard constant and marginalized subnetworks)
+                print("Pruning spn...")
+                runtime = @elapsed spn2 = project(spn, query, x)
+                println("done: $(runtime)s")
                 # Run local search
-                runtime = @elapsed localsearch!(x, spn, query, 100)
+                runtime += @elapsed localsearch!(x, spn2, query, 100)
                 printstyled("LocalSearch: "; color = :green)
-            elseif algo == :bp
-                # Run hybrid belief propagation
-                runtime = @elapsed beliefpropagation!(x, spn, query; 
-                    maxiterations = 5, 
+            elseif algo == :prunedbp
+                # Run hybrid belief propagation with pruned network
+                print("Pruning spn...")
+                runtime = @elapsed spn2 = project2(spn, query, x)
+                println("done: $(runtime)s")
+                runtime += @elapsed beliefpropagation!(x, spn2, query; 
+                    maxiterations = 10, 
                     lowerbound = true, 
                     verbose = true,
                     warmstart = true,
                     rndminit = false)
-                printstyled("BeliefPropagation: "; color = :green)
+                # printstyled("BeliefPropagation: "; color = :green)
+                runtime += @elapsed localsearch!(x, spn2, query, 100)
+                printstyled("Pruning+BeliefPropagation+LocalSearch: "; color = :green)
+            elseif algo == :bp
+                # Run hybrid belief propagation
+                runtime = @elapsed beliefpropagation!(x, spn, query; 
+                    maxiterations = 10, 
+                    lowerbound = true, 
+                    verbose = true,
+                    warmstart = true,
+                    rndminit = false)
+                # printstyled("BeliefPropagation: "; color = :green)
+                runtime += @elapsed localsearch!(x, spn, query, 100)
+                printstyled("BeliefPropagation+LocalSearch: "; color = :green)
                 # for i = 1:30
                 #     bptime = @elapsed beliefpropagation!(x, spn, query; 
                 #              maxiterations = 3, 
@@ -131,14 +155,20 @@ totaltime = @elapsed open(q_filename) do io
                 # rndminit = false)
                 # printstyled("BeliefPropagation: "; color = :green)
             elseif algo == :tbp
+                # First prune network (discard constant and marginalized subnetworks)
+                print("Pruning spn...")
+                runtime = @elapsed spn2 = project(spn, query, x)
+                println("done: $(runtime)s")                
                 # Run hybrid belief propagation (numerically unstable but more efficient)
-                runtime = @elapsed treebeliefpropagation!(x, spn, query; 
-                    maxiterations = 5, 
+                runtime += @elapsed treebeliefpropagation!(x, spn, query; 
+                    maxiterations = 10, 
                     lowerbound = true, 
                     verbose = true,
                     warmstart = false,
                     rndminit = false)
-                printstyled("BeliefPropagation: "; color = :green)                
+                # printstyled("T-BeliefPropagation: "; color = :green)     
+                runtime += @elapsed localsearch!(x, spn, query, 100)
+                printstyled("T-BeliefPropagation+LocalSearch: "; color = :green)
             end
             value = spn(x)
             print("$value")
