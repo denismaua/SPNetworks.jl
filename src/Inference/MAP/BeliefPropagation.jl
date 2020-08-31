@@ -26,7 +26,7 @@ function spn2bn(spn::SumProductNetwork)
         if issum(node)
             # process sum node
             if length(node.children) > 4
-                @warn "node $i indegree is too large: $(length(node.children)). It is highly recommend to split nodes before running this."
+                @warn "node $i indegree is too large: $(length(node.children)). It is highly recommend to split nodes before running this. Try running binarize! first."
             end
             var = VariableNode(2)
             variables["Y"*string(i)] = var
@@ -45,7 +45,7 @@ function spn2bn(spn::SumProductNetwork)
         elseif isprod(node)
             # process product node
             if length(node.children) > 4
-                @warn "node $i indegree is too large: $(length(node.children)). It is highly recommend to split nodes before running this."
+                @warn "node $i indegree is too large: $(length(node.children)). It is highly recommend to split nodes before running this. Try running binarize! first."
             end
             var = VariableNode(2)
             variables["Y"*string(i)] = var

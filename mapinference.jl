@@ -1,10 +1,10 @@
 # Runs MAP Inference algorithms
 using SumProductNetworks
-import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction, project
+import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction, project, project2, binarize!
 import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation!, treebeliefpropagation! 
 
 if length(ARGS) < 2
-    println("Usage: julia --color=yes mapinference.jl spn_filename query_filename [maxinstances]")
+    println("Usage: julia --color=yes mapinference.jl spn_filename query_filename [maxinstances] [solution_filename]")
     exit()
 end
 spn_filename = ARGS[1]
@@ -12,6 +12,10 @@ q_filename = ARGS[2]
 maxinstances = 100
 if length(ARGS) > 2
     maxinstances = parse(Int, ARGS[3])
+end
+o_filename = q_filename * ".solution"
+if length(ARGS) > 3
+    o_filename = ARGS[4]
 end
 
 # Which algorithms to run?
@@ -22,7 +26,8 @@ end
 # algorithms = [:mp, :ls, :bp]
 # algorithms = [:mp, :bp]
 # algorithms = [:mp, :bp, :ls]
-algorithms = [:mp, :ls, :bp, :tbp]
+# algorithms = [:mp, :ls, :bp, :tbp]
+algorithms = [:mp, :ls, :prunedbp, :tbp]
 # algorithms = [:mp, :ls]
 # algorithms = [:mp]
 
@@ -35,7 +40,7 @@ end
 println("SPN: ", spn_filename)
 println("Query: ", q_filename)
 println("MaxInstances: ", maxinstances)
-println("Algorithms:", algorithms)
+println("Algorithms: ", algorithms)
 println()
 
 # Load SPN from spn file (assume 0-based indexing)
@@ -59,6 +64,7 @@ x = Array{Float64}(undef, nvars)
 totaltime = @elapsed open(q_filename) do io
     inst = 1
     printstyled("╮\n"; color = :red)
+    open(o_filename, "w") do outio
     while !eof(io)
         # fill!(x, NaN) # reset configuration
         printstyled("├(", inst, ")\n"; color = :red)
@@ -97,7 +103,8 @@ totaltime = @elapsed open(q_filename) do io
         #         )
         # )
         @assert (length(query) + length(marg) + length(evidence)) == nvars
-        mpvalue = 0.0
+        best = -Inf
+        solution = similar(x)
         for algo in algorithms
             printstyled("│\t"; color = :red)
             if algo == :mp
@@ -117,7 +124,9 @@ totaltime = @elapsed open(q_filename) do io
                 # TODO: re-binarize network.
                 # Run hybrid belief propagation with pruned network
                 print("Pruning spn...")
-                runtime = @elapsed spn2 = project(spn, query, x)
+                runtime = @elapsed spn2 = project2(spn, query, x)
+                # Fix no-binary nodes introduced
+                runtime += @elapsed binarize!(spn2)
                 println("done: $(runtime)s")
                 runtime += @elapsed beliefpropagation!(x, spn2, query; 
                     maxiterations = 10, 
@@ -179,15 +188,26 @@ totaltime = @elapsed open(q_filename) do io
             value = spn(x)
             print("$value")
             printstyled("  [$(runtime)s]\n"; color = :light_black)
+            if value >  best
+                best = value
+                solution .= x
+            end
             # push!(results[algo], (value,runtime))
             push!(results[algo], value)
         end
+        # save best solution to file
+        println(outio, "# Instance: $inst  MAP Value: $best")
+        for i = 1:length(solution)
+            print(outio, solution[i], " ")
+        end
+        println(outio)
         inst += 1
         # if maximum no. of instances is reached, stop
         if inst > maxinstances
             break
         end
-    end
+    end # end of while
+    end # end of open file (for writing)
     printstyled("╯\n"; color = :red)
 end
 # display sumary of results
