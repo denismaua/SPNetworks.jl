@@ -432,3 +432,39 @@ function subnetwork(spn::SumProductNetwork, node::Integer)
     end
     spn = SumProductNetwork([ nodes[i] for i in nodeid ])  
 end
+
+" Modifies network so that each node has at most two children. Assume network is normalized. "
+function binarize!(spn::SumProductNetwork)
+    stack = UInt[1]
+    newid = length(spn) + 1
+    while !isempty(stack)
+        n = pop!(stack)
+        node = spn[n]
+        if !isleaf(node)
+            if length(node.children) > 2
+                leftchild = node.children[1]
+                if isprod(node)
+                    # add new product node
+                    newnode = ProductNode(node.children[2:end])
+                else
+                    # add new sum node
+                    w = node.weights[1]
+                    newnode = SumNode(node.children[2:end], node.weights[2:end]./(1-w))
+                    empty!(node.weights)
+                    push!(node.weights, w)
+                    push!(node.weights, 1-w)
+                end
+                push!(spn.nodes, newnode)
+                empty!(node.children)
+                push!(node.children, leftchild)
+                push!(node.children, newid)
+                newid += 1
+            end
+            append!(stack, node.children)
+        end
+    end
+    # relabel node ids
+    sort!(spn)
+    nothing    
+end
+
