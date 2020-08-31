@@ -394,3 +394,40 @@ function project2(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVe
     sort!(spn) # ensure nodes are topologically sorted (with ties broken by bfs-order)
     spn    
 end
+
+"""
+    subnetwork(spn::SumProductNetwork, node)
+
+Returns the subnetwork of `spn` rooted at given `node`.
+"""
+function subnetwork(spn::SumProductNetwork, node::Integer)
+    # Collect nodes in subnetwork
+    nodes = Dict{UInt,Node}()
+    stack = UInt[node]
+    while !isempty(stack)
+        n = pop!(stack)
+        node = spn[n]
+        nodes[n] = deepcopy(node)
+        if !isleaf(node)
+            append!(stack, node.children)
+        end
+    end
+    # println(nodes)
+    # Reassign indices so that the become contiguous    
+    # Sorted list of remaining node ids -- position in list gives new index
+    nodeid = Base.sort!(collect(keys(nodes)))
+    idmap = Dict{UInt,UInt}()
+    for (newid, oldid) in enumerate(nodeid)
+        idmap[oldid] = newid
+    end
+    # println(idmap)
+    # Now remap ids of children nodes
+    for node in values(nodes)
+        if !isleaf(node)
+            for (i, ch) in enumerate(node.children)
+                node.children[i] = idmap[ch]
+            end
+        end
+    end
+    spn = SumProductNetwork([ nodes[i] for i in nodeid ])    
+end
