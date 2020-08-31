@@ -259,6 +259,7 @@ function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVec
                         # replace it with equivalent fragment 
                         if !haskey(nodes, ch) # only if we haven't already done this
                             e = first(e_in_node)
+                            # e = Base.sort!(collect(e_in_node))[1]
                             if !haskey(cache, e) # create indicator nodes
                                 nodes[newid] = IndicatorFunction(e, evidence[e])
                                 nodes[newid+1] = IndicatorFunction(e, evidence[e]+1) # arbitrary different value
@@ -429,5 +430,5 @@ function subnetwork(spn::SumProductNetwork, node::Integer)
             end
         end
     end
-    spn = SumProductNetwork([ nodes[i] for i in nodeid ])    
+    spn = SumProductNetwork([ nodes[i] for i in nodeid ])  
 end
