@@ -14,6 +14,20 @@ Assumes nodes are numbered topologically so that `nodes[1]` is the root (output)
 
 # Arguments
 - `nodes`: vector of nodes sorted in topological order (use sort!(spn) after creating the network if this is not the case).
+
+# Examples
+```jldoctest
+julia> spn = SumProductNetwork([SumNode([2,3,4],[0.2,0.5,0.3]), ProductNode([5,7]), ProductNode([5,8]), ProductNode([6,8]), CategoricalDistribution(1, [0.6,0.4]), CategoricalDistribution(1, [0.1,0.9]), CategoricalDistribution(2, [0.3,0.7]), CategoricalDistribution(2, [0.8,0.2]) ])
+Sum-Product Network with 8 nodes (1 sum, 3 products, 4 leaves) and 2 variables:
+  1 : + 2 0.2 3 0.5 4 0.3
+  2 : * 5 7
+  3 : * 5 8
+  4 : * 6 8
+  5 : categorical 1 0.6 0.4
+  6 : categorical 1 0.1 0.9
+  7 : categorical 2 0.3 0.7
+  8 : categorical 2 0.8 0.2
+```
 """
 struct SumProductNetwork
     nodes::Vector{Node}
@@ -31,12 +45,20 @@ Base.length(spn::SumProductNetwork) = length(nodes(spn))
 
 Get node of `spn` by indexes `i`.
 
-### Examples
+# Examples
 
 ```jldoctest
-julia> node = spn[1] # returns the root node
-julia> nodes = spn[1,3] # returns the root node and some other
-julia> nodes = spn[1:end] # collects all nodes
+julia> spn = SumProductNetwork([SumNode([2,3,4],[0.2,0.5,0.3]), ProductNode([5,7]), ProductNode([5,8]), ProductNode([6,8]), CategoricalDistribution(1, [0.6,0.4]), CategoricalDistribution(1, [0.1,0.9]), CategoricalDistribution(2, [0.3,0.7]), CategoricalDistribution(2, [0.8,0.2]) ]);
+
+julia> root = getindex(spn, 1) # returns the root node
++ 2 0.2 3 0.5 4 0.3
+
+julia> getindex(spn, 1:3) # returns the root node and its children other
+3-element Array{SPNetworks.Node,1}:
+ + 2 0.2 3 0.5 4 0.3
+ * 6 5
+ * 6 8
+
 ```
 """
 Base.getindex(spn::SumProductNetwork, i...) = getindex(nodes(spn), i...)

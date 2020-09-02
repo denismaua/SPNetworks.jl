@@ -2,7 +2,7 @@ using SPNetworks
 using Documenter
 
 makedocs(;
-    modules=[SumProductNetworks],
+    modules=[SPNetworks],
     authors="Denis Maua <denis.maua@gmail.com>",
     repo="https://github.com/denismaua/SPNetworks.jl/blob/{commit}{path}#L{line}",
     sitename="SPNetworks.jl",

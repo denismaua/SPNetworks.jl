@@ -18,8 +18,6 @@ combinations and products; leaves represent distributions.
 module SPNetworks
 
 # required packages
-#using SparseArrays
-using Clustering
 
 import Random
 

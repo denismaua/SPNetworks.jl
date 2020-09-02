@@ -1,4 +1,5 @@
 # Structure Learning
+using Clustering
 
 """
     chainruleSPN(cardinalities::AbstractVector,depth::Int64=1,root::Variable=1)::SumProductNetwork

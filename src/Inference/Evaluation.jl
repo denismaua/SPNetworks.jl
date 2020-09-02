@@ -11,16 +11,19 @@ export
 Evaluates the sum-product network at a given instantiation `x` of the variables.
 Summed-out variables are represented as `NaN`s.
 
-### Parameters
+# Parameters
 
 - `x`: vector of values of variables (integers or reals). 
 
-### Examples
+# Examples
 
 To compute the probability of ``P(b=1)`` using spn `S`, use
 ```jldoctest
-julia> S([NaN, 2]
+julia> S = SumProductNetwork(IOBuffer("1 + 2 0.2 3 0.5 4 0.3\n2 * 5 7\n3 * 5 8\n4 * 6 8\n5 categorical 1 0.6 0.4\n6 categorical 1 0.1 0.9\n7 categorical 2 0.3 0.7\n8 categorical 2 0.8 0.2"));
+
+julia> S([NaN, 2])
 0.3
+
 julia> S(NaN, 2)
 0.3
 ```
@@ -38,7 +41,7 @@ end
 
 Returns the sums of the log-probabilities of instances `x` in `X`.
 
-### Parameters
+# Parameters
 
 - `X`: matrix of values of variables (integers or reals). Summed-out variables are represented as `NaN`s.
 """
@@ -62,16 +65,18 @@ end
 
 Evaluates the sum-product network `spn` in log domain at configuration `x`.
 
-### Parameters
+# Parameters
 
 - `x`: vector of values of variables (integers or reals). Summed-out variables are represented as `NaN`s
 
-### Examples
+# Examples
 
 To compute the probability of ``P(b=1)`` using spn `S`, use
 ```jldoctest
+julia> S = SumProductNetwork(IOBuffer("1 + 2 0.2 3 0.5 4 0.3\n2 * 5 7\n3 * 5 8\n4 * 6 8\n5 categorical 1 0.6 0.4\n6 categorical 1 0.1 0.9\n7 categorical 2 0.3 0.7\n8 categorical 2 0.8 0.2"));
 julia> logpdf(S,[NaN, 2])
 -1.2039728043259361
+
 ```
 """
 function logpdf(spn::SumProductNetwork, x::AbstractVector{<:Real})::Float64
@@ -114,7 +119,11 @@ function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::Abs
     @inbounds return values[1]
 end
 
-""" Sample integer with probability proportional to given weights. """
+""" 
+    sample(weights)::UInt
+
+Sample integer with probability proportional to given weights. 
+"""
 function sample(weights)::UInt
     Z = sum(weights)
     u = rand()
@@ -145,7 +154,7 @@ Returns a sample of values of the variables generated according
 to the probability defined by the network `spn`. Stores the sample
 as a vector of values
 
-### Example
+# Example
 
 ```julia
 julia> rand(spn)

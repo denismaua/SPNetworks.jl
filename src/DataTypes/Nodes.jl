@@ -1,4 +1,10 @@
 # Implements node data types and associated helper functions
+export 
+    SumNode, 
+    ProductNode,
+    CategoricalDistribution,
+    IndicatorFunction,
+    GaussianDistribution
 
 """
 Node Data Structures
