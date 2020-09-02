@@ -16,7 +16,7 @@ Assumes nodes are numbered topologically so that `nodes[1]` is the root (output)
 - `nodes`: vector of nodes sorted in topological order (use sort!(spn) after creating the network if this is not the case).
 
 # Examples
-```jldoctest
+```julia
 julia> spn = SumProductNetwork([SumNode([2,3,4],[0.2,0.5,0.3]), ProductNode([5,7]), ProductNode([5,8]), ProductNode([6,8]), CategoricalDistribution(1, [0.6,0.4]), CategoricalDistribution(1, [0.1,0.9]), CategoricalDistribution(2, [0.3,0.7]), CategoricalDistribution(2, [0.8,0.2]) ])
 Sum-Product Network with 8 nodes (1 sum, 3 products, 4 leaves) and 2 variables:
   1 : + 2 0.2 3 0.5 4 0.3
@@ -47,7 +47,7 @@ Get node of `spn` by indexes `i`.
 
 # Examples
 
-```jldoctest
+```julia
 julia> spn = SumProductNetwork([SumNode([2,3,4],[0.2,0.5,0.3]), ProductNode([5,7]), ProductNode([5,8]), ProductNode([6,8]), CategoricalDistribution(1, [0.6,0.4]), CategoricalDistribution(1, [0.1,0.9]), CategoricalDistribution(2, [0.3,0.7]), CategoricalDistribution(2, [0.8,0.2]) ]);
 
 julia> root = getindex(spn, 1) # returns the root node
