@@ -1,8 +1,8 @@
-# SumProductNetworks.jl
+# SPNetworks.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://denismaua.github.io/SumProductNetworks.jl/stable)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://denismaua.github.io/SumProductNetworks.jl/dev)
-[![Build Status](https://github.com/denismaua/SumProductNetworks.jl/workflows/CI/badge.svg)](https://github.com/denismaua/SumProductNetworks.jl/actions)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://denismaua.github.io/SPNetworks.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://denismaua.github.io/SPNetworks.jl/dev)
+[![Build Status](https://github.com/denismaua/SumProductNetworks.jl/workflows/CI/badge.svg)](https://github.com/denismaua/SPNetworks.jl/actions)
 
 A Julia package for manipulating Sum-Product Networks.
 
@@ -28,12 +28,12 @@ The internal nodes represent convex combinations and products, and the leaves re
 ### Inference
 
 - Marginal inference
-- MAP Inference:
+- MAP inference:
   - MaxProduct
   - Hybrid Message Passing
-  - _TODO_: Local Search
+  - Stochastic Local Search
   - _TODO_: ArgMaxProduct
-  - _TODO_: SPN2MILP
+  - SPN2MILP (but see package SPN2MILP for integration with Gurobi)
 
 ### Learning
 
@@ -53,7 +53,7 @@ In a julia shell, type `[` to enter the Pkg mode then type
 ```shell
 # pkg> add https://github.com/denismaua/AlgebraicDecisionDiagrams.jl
 pkg> add https://github.com/denismaua/GraphicalModels.jl
-pkg> add https://github.com/denismaua/SumProductNetworks.jl
+pkg> add https://github.com/denismaua/SPNetworks.jl
 ```
 You can type `backspace` to leave the Pkg mode.
 
@@ -61,7 +61,7 @@ You can type `backspace` to leave the Pkg mode.
 
 ```julia
 # Load package
-using SumProductNetworks
+using SPNetworks
 # Creating a simple categorical SPN from string/file
 io = IOBuffer("""# A simple SPN (anything after # is ignored)
 # Inner nodes
@@ -82,7 +82,7 @@ for a in 1:2, b in 1:2
     println("spn($a,$b) = $prob")
 end
 
-import SumProductNetworks: SumNode, ProductNode, CategoricalDistribution, IndicatorFunction
+import SPNetworks: SumNode, ProductNode, CategoricalDistribution, IndicatorFunction
 # Selective SPN
 @show selspn = SumProductNetwork(
     [
@@ -105,7 +105,7 @@ println("selspn(A=1) = $value") # ≈ 0.6
 @show logpdf(selspn,[2,NaN,NaN]) # ≈ log(0.4)
 
 # MAP Inference
-import SumProductNetworks.MAPInference: maxproduct!
+import SPNetworks.MAPInference: maxproduct!
 evidence = [0.0,0.0,0.0] # no evidence, maximize all variables -- solution is stored in this vector
 query = Set([1,2,3]) # variables to be maximized (all) -- non-evidence, non-query variables are marginalized
 mp = maxproduct!(evidence, selspn, query) # run maxproduct and store solution in evidence
@@ -118,3 +118,7 @@ println("MaxProduct(A=$(evidence[1]),B=$(evidence[2]),C=$(evidence[3])) -> $(exp
 Copyright (c) 2020 Denis D. Mauá.
 
 See LICENSE file for more information.
+
+## Why SPNetworks?
+
+There already exists a package names `SumProductNetworks`; besides, SP is the acronym of the city I live in, so that makes an interesting coincidence.

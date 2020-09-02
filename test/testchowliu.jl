@@ -1,6 +1,6 @@
 # Test SPN learn of mixtures of Chow-Liu trees
 @testset "Chow-Liu" begin
-    import SumProductNetworks.BayesianNetworks: BayesianTree, BTRoot, BTNode, BTLeaf, compile
+    import SPNetworks.BayesianNetworks: BayesianTree, BTRoot, BTNode, BTLeaf, compile
     # Example from Strudel paper (PGM 2020)
     tree = BTRoot(
         4,

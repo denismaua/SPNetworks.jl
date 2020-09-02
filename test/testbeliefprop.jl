@@ -1,7 +1,7 @@
 # Test maxproduct algorithm
-import SumProductNetworks.MAP: beliefpropagation!
 
 @testset "BeliefPropagation" begin
+    import SPNetworks.MAP: beliefpropagation!
 
     @testset "Discrete SPNs" begin
 

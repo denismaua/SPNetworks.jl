@@ -1,12 +1,12 @@
 ```@meta
-CurrentModule = SumProductNetworks
+CurrentModule = SPNetworks
 ```
 
-# SumProductNetworks
+# SPNetworks
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [SumProductNetworks]
+Modules = [SPNetworks]
 ```

@@ -82,7 +82,7 @@ function sort!(spn::SumProductNetwork)
             end
         end
     end
-    @assert count(isequal(0), pa) == 1 "SumProductNetworks has more than one parentless node"
+    @assert count(isequal(0), pa) == 1 "SumProductNetwork has more than one parentless node"
     root = findfirst(isequal(0),pa) # root is the single parentless node
     # Kanh's algorithm: collect node ids in topological BFS order
     open = Vector{Int}()
@@ -230,7 +230,7 @@ function project(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVec
     nodes = Dict{UInt,Node}()
     # evaluate network to collect node values
     vals = Array{Float64}(undef, length(spn))
-    SumProductNetworks.logpdf!(vals, spn, evidence);
+    SPNetworks.logpdf!(vals, spn, evidence);
     # println(exp(vals[1]))
     # collect marginalized variables
     marginalized = Set(Base.filter(i -> (isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))
@@ -316,7 +316,7 @@ function project2(spn::SumProductNetwork,query::AbstractSet,evidence::AbstractVe
     nodes = Dict{UInt,Node}()
     # evaluate network to collect node values
     vals = Array{Float64}(undef, length(spn))
-    SumProductNetworks.logpdf!(vals, spn, evidence);
+    SPNetworks.logpdf!(vals, spn, evidence);
     # println(exp(vals[1]))
     # collect marginalized variables
     marginalized = Set(Base.filter(i -> (isnan(evidence[i]) && (i ∉ query)), 1:length(evidence)))

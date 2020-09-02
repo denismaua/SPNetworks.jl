@@ -2,8 +2,8 @@
 
 module BayesianNetworks
 
-using SumProductNetworks
-import SumProductNetworks: Node, SumNode, ProductNode, LeafNode, IndicatorFunction
+using SPNetworks
+import SPNetworks: Node, SumNode, ProductNode, LeafNode, IndicatorFunction
 
 "Tree-shaped Bayesian network. A tree is conneted digraph where each node has at most one parent."
 abstract type BayesianTree end
@@ -49,7 +49,7 @@ function compile(root::BTRoot)
     # return compiled SPN
     spn = SumProductNetwork(nodelist)
     # node ids are not topologically orders - sort in-place nodes in bfs-order
-    SumProductNetworks.sort!(spn)
+    SPNetworks.sort!(spn)
     # return sorted network
     spn
 end

@@ -1,6 +1,5 @@
 # Test SPN to MILP translation
-import SumProductNetworks.MAP: spn2milp
-using Gurobi
+import SPNetworks.MAP: spn2milp
 
 @testset "SPN2MILP" begin
     # SPN with dichotomic sum nodes (<= 2 children)
@@ -22,18 +21,6 @@ using Gurobi
         ]
     )
 
-    model = spn2milp(SPN, [6,7,2,9,1,8])
-    # println(model)
-    optimize(model)
-     # show results
-    sol = get_solution(model)
-    println("Solution: $(sol)")
-    # show obj value
-    obj = get_objval(model)
-    println("Objective: ", obj)
-    @test obj ≈ 0.4
-    # for (i,b) in buckets
-    #         println(i, " ", b)
-    # end
+    spn2milp(stdou, SPN, [6,7,2,9,1,8])
 
 end

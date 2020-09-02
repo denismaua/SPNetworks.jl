@@ -1,7 +1,8 @@
 # Test creation of template SPNs
 
 @testset "Defining and evaluating discrete SPNs" begin
-
+    import SPNetworks: chainruleSPN
+    
     @info "# Chain Rule SPN"
 
     @info "## Creation"

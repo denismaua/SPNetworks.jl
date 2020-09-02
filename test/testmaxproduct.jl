@@ -1,7 +1,7 @@
 # Test maxproduct algorithm
-import SumProductNetworks.MAP: maxproduct!
 
 @testset "MaxProduct" begin
+    import SPNetworks.MAP: maxproduct!
 
     @testset "Discrete SPNs" begin
 

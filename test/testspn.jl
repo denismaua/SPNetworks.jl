@@ -1,5 +1,5 @@
 # Test creation and evaluation of SPNs
-import SumProductNetworks: ncircuits, scopes
+import SPNetworks: ncircuits, scopes
 
 @testset "Defining and evaluating discrete SPNs" begin
     @testset "Simple DAG SPN" begin
@@ -106,13 +106,13 @@ import SumProductNetworks: ncircuits, scopes
         @test length(x) == 3  
         x[3] = NaN
         # project/prune network
-        prunedHMM = SumProductNetworks.project(HMM, Set([1]), x)
+        prunedHMM = SPNetworks.project(HMM, Set([1]), x)
         @testset "Projection" for a = 1:2
             x[1] = a            
             @test HMM(x) ≈ prunedHMM(x)
         end
         x = [1.0, 1.0, 2.0]
-        prunedHMM = SumProductNetworks.project(HMM, Set([1]), x)
+        prunedHMM = SPNetworks.project(HMM, Set([1]), x)
         @testset "Projection" for a = 1:2
             x[1] = a            
             @test HMM(x) ≈ prunedHMM(x)

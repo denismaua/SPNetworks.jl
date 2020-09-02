@@ -1,5 +1,4 @@
 # Implements a 1-Neighborhod Stochastic Local Search for MAP Inference
-import SumProductNetworks: vardims
 
 """
     localsearch!(evidence,spn,query)

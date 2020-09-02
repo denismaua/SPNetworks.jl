@@ -10,15 +10,14 @@ const MLExpr = ADD.MultilinearExpression
 Translates sum-product network `spn` into MAP-equivalent mixed-integer linear program.
 Require that sum nodes have exactly two children.
 """
-function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Integer}}=nothing)    
+function spn2milp(io, spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Integer}}=nothing)    
     # obtain scope of every node
-    scopes = SumProductNetworks.scopes(spn)
+    scopes = scopes(spn)
     # Extract ADDs for each variable
     ## Colect ids of sum nodes
     sumnodes = filter(i -> issum(spn[i]), 1:length(spn))
     ## Create a bucket for each sum node / latent variable
     buckets = Dict{Int,Array{ADD.DecisionDiagram{MLExpr}}}( i => [] for i in sumnodes ) 
-    # TODO: Apply min-fill or min-degree heuristic to obtain better elimination ordering
     # variable elimination sequence
     if isnothing(ordering) # if no ordering is given, obtain one
         ## Domain graph
@@ -26,7 +25,7 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
     end
     ## First obtain ADDs for manifest variables
     offset = 0 # offset to apply to variable indices at ADD leaves
-    vdims = SumProductNetworks.vardims(spn) # var id => no. of values
+    vdims = vardims(spn) # var id => no. of values
     pool = ADD.DecisionDiagram{MLExpr}[]
     for var in sort(scopes[1])
         # Extract ADD for variable var
@@ -34,7 +33,7 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         offset += vdims[var] # update start index for next variable
         # Create corresponding optimization variables for leaves (interacts with Gurobi)
         map(t -> begin
-            println("binary ", ADD.value(t))
+            println(io, "binary ", ADD.value(t))
             end, 
                 Base.filter(n -> isa(n,ADD.Terminal), collect(α))
             )          
@@ -117,11 +116,11 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
                 push!(terms, "$(c)χ$(id)")
                 push!(idx, id)
                 # w - x ≤ 0 
-                println("χ$(id) - χ$(m.vars[1]) <= 0.0")
+                println(io, "χ$(id) - χ$(m.vars[1]) <= 0.0")
                 # w - y ≤ 0 
-                println("χ$(id) - χ$(m.vars[2]) <= 0.0")
+                println(io, "χ$(id) - χ$(m.vars[2]) <= 0.0")
                 # w - y - x ≥ -1
-                println("χ$(id) - χ$(m.vars[1]) - χ$(m.vars[1]) >= -1")
+                println(io, "χ$(id) - χ$(m.vars[1]) - χ$(m.vars[1]) >= -1")
             end
             push!(coeff, c)
         end
@@ -129,14 +128,14 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # for (i,c) in zip(idx, coeff)
         #     print("$c χ$(id) + ")
         # end
-        println("$f = ", join(terms, " + "))
+        println(io, "$f = ", join(terms, " + "))
         cache[e] = f
     end
     # Run variable elimination to generate constraints
     α = ADD.Terminal(MLExpr(1.0))
     for i = 1:length(ordering)
         var = ordering[i] # variable to eliminate
-        printstyled("Eliminate: ", var, "\n"; color = :red)
+        # printstyled("Eliminate: ", var, "\n"; color = :red)
         α = α * reduce(*, buckets[var]; init = ADD.Terminal(MLExpr(1.0)))
         α = ADD.marginalize(α, var)        
         # Obtain copy with modified leaves and generate constraints (interacts with JUMP / Gurobi)
@@ -151,7 +150,7 @@ function spn2milp(spn::SumProductNetwork, ordering::Union{Nothing,Array{<:Intege
         # push!(buckets[id], β) 
         # printstyled("-> $id\n"; color = :green)     
     end
-    println("Objective: ", ADD.value(α))
+    println(io, "Objective: ", ADD.value(α))
     ADD.value(α)
 end
 
@@ -176,7 +175,8 @@ function extractADD!(cache::Dict{Int,ADD.DecisionDiagram{MLExpr}},spn::SumProduc
                 cache[node] = γ
                 return γ
             end
-        end        
+        end       
+        @error "Something went wrong. $var is not in scope of node $(node)." 
     elseif isa(spn[node], IndicatorFunction) # leaf
         @assert spn[node].scope == var
         stride = convert(Int, offset + spn[node].value)

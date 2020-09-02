@@ -11,7 +11,7 @@ Returns factor graph representing the computation graph of `spn`.
 """
 function spn2bn(spn::SumProductNetwork)
     # recover dimensionality for each variable
-    vdims = SumProductNetworks.vardims(spn)
+    vdims = vardims(spn)
     variables = Dict{String,VariableNode}()
     # sizehint!(variables,length(vdims)+length(spn))
     factors = Dict{String,FactorNode}()
@@ -246,6 +246,7 @@ end
     treebeliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, query; kwargs)
 
 Speciliazed hybrid belief propagation for tree-shaped SPNs where innner nodes have two children, leaves are indicators.
+Warning: this implementation is not numerically stable. It require some care when running on large networks.
 """
 function treebeliefpropagation!(x::AbstractArray{<:Real}, spn::SumProductNetwork, query; 
     maxiterations = 10, 

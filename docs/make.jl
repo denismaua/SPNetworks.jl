@@ -1,14 +1,14 @@
-using SumProductNetworks
+using SPNetworks
 using Documenter
 
 makedocs(;
     modules=[SumProductNetworks],
     authors="Denis Maua <denis.maua@gmail.com>",
-    repo="https://github.com/denismaua/SumProductNetworks.jl/blob/{commit}{path}#L{line}",
-    sitename="SumProductNetworks.jl",
+    repo="https://github.com/denismaua/SPNetworks.jl/blob/{commit}{path}#L{line}",
+    sitename="SPNetworks.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://denismaua.github.io/SumProductNetworks.jl",
+        canonical="https://denismaua.github.io/SPNetworks.jl",
         assets=String[],
     ),
     pages=[
@@ -17,5 +17,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/denismaua/SumProductNetworks.jl",
+    repo="github.com/denismaua/SPNetworks.jl",
 )

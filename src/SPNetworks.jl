@@ -1,5 +1,5 @@
 """
-# SumProductNetworks.jl
+# SPNetworks.jl
 
 A package for manipulating Sum-Product Networks.
 
@@ -15,7 +15,7 @@ SPNs are represented as rooted graphs; internal nodes represent convex
 combinations and products; leaves represent distributions.
 
 """
-module SumProductNetworks
+module SPNetworks
 
 # required packages
 #using SparseArrays

@@ -2,11 +2,12 @@
 
 module MAP
 
-using SumProductNetworks
-import SumProductNetworks: 
+using SPNetworks
+import SPNetworks: 
     Node, SumNode, ProductNode, LeafNode, CategoricalDistribution, IndicatorFunction, GaussianDistribution,
     isleaf, isprod, issum,
-    logpdf!
+    logpdf!,
+    vardims
 
 include("MaxProduct.jl")
 include("LocalSearch.jl")

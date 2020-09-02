@@ -28,7 +28,7 @@
                 CategoricalDistribution(2, [0.8,0.2])  # 8
             ])
             # @info "## Saving network to disk" 
-            SumProductNetworks.save(SPN,normpath("$(@__DIR__)/../assets/test.spn"))
+            SPNetworks.save(SPN,normpath("$(@__DIR__)/../assets/test.spn"))
             # @info "## Loading network from file"
             SPN2 = SumProductNetwork(normpath("$(@__DIR__)/../assets/test.spn"))
             # @info "## Comparing sizes" 
