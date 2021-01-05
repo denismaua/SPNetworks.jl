@@ -105,7 +105,7 @@ println("selspn(A=1) = $value") # ≈ 0.6
 @show logpdf(selspn,[2,NaN,NaN]) # ≈ log(0.4)
 
 # MAP Inference
-import SPNetworks.MAPInference: maxproduct!
+import SPNetworks.MAP: maxproduct!
 evidence = [0.0,0.0,0.0] # no evidence, maximize all variables -- solution is stored in this vector
 query = Set([1,2,3]) # variables to be maximized (all) -- non-evidence, non-query variables are marginalized
 mp = maxproduct!(evidence, selspn, query) # run maxproduct and store solution in evidence
@@ -119,6 +119,16 @@ Copyright (c) 2020 Denis D. Mauá.
 
 See LICENSE file for more information.
 
-## Why SPNetworks?
+## Citation
 
-There already exists a package names `SumProductNetworks`; besides, SP is the acronym of the city I live in, so that makes an interesting coincidence.
+If you use this code or code derived from it in an academic work, please cite
+
+    Denis Deratani Mauá, Heitor Reis Ribeiro, Gustavo Perez Katague, Alessandro Antonucci (2020). Two Reformulation Approaches to Maximum-A-Posteriori Inference in Sum-Product Networks. In: PGM 2020.
+
+    @inproceedings{maua2020pgm,
+        author = {Denis Deratani Mauá and Heitor Reis Ribeiro and Gustavo Perez Katague and Alessandro Antonucci},
+         booktitle = {Proceedings of the Tenth International Conference on Probabilistic Graphical Models},
+         title = {Two Reformulation Approaches to Maximum-A-Posteriori Inference in Sum-Product Networks},
+         year = {2020}
+    }
+

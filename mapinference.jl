@@ -1,7 +1,7 @@
 # Runs MAP Inference algorithms
-using SumProductNetworks
-import SumProductNetworks: leaves, isleaf, issum, isprod, IndicatorFunction, project, project2, binarize!
-import SumProductNetworks.MAP: maxproduct!, localsearch!, beliefpropagation!, treebeliefpropagation! 
+using SPNetworks
+import SPNetworks: leaves, isleaf, issum, isprod, IndicatorFunction, project, project2, binarize!
+import SPNetworks.MAP: maxproduct!, localsearch!, beliefpropagation!, treebeliefpropagation! 
 
 if length(ARGS) < 2
     println("Usage: julia --color=yes mapinference.jl spn_filename query_filename [maxinstances] [solution_filename]")
@@ -120,11 +120,10 @@ totaltime = @elapsed open(q_filename) do io
                 runtime += @elapsed localsearch!(x, spn2, query, 100)
                 printstyled("LocalSearch: "; color = :green)
             elseif algo == :prunedbp
-                # Note: project2 makes network nonbinary, and creates large potentials!
-                # TODO: re-binarize network.
                 # Run hybrid belief propagation with pruned network
                 print("Pruning spn...")
                 runtime = @elapsed spn2 = project2(spn, query, x)
+                # project2 makes network nonbinary, and creates large potentials!
                 # Fix no-binary nodes introduced
                 runtime += @elapsed binarize!(spn2)
                 println("done: $(runtime)s")
