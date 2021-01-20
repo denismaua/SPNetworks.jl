@@ -6,27 +6,27 @@ import SPNetworks: SumNode, ProductNode, CategoricalDistribution, IndicatorFunct
 
 @testset "SPNetworks.jl" begin
 
-@testset "Creation, evaluation, sampling" begin
-    include("testspn.jl")
-    include("testgspn.jl")
-    include("testeval.jl")
-end
+# @testset "Creation, evaluation, sampling" begin
+#     include("testspn.jl")
+#     include("testgspn.jl")
+#     include("testeval.jl")
+# end
 
 # I/O
-include("testio.jl")             
+# include("testio.jl")             
 
 # MAP Inference
-@testset "MAP Infrence" begin
-    include("testmaxproduct.jl")
-    include("testbeliefprop.jl")
-    # include("testspn2milp.jl")
-end
-
-# @testset "Parameter learning" begin
-# Not working
-#   include("testparamlearn.jl")
-#   include("testparamlearngspn.jl")
+# @testset "MAP Infrence" begin
+#     include("testmaxproduct.jl")
+#     include("testbeliefprop.jl")
+#     # include("testspn2milp.jl")
 # end
+
+@testset "Parameter learning" begin
+# Not working
+  include("testparamlearn.jl")
+#   include("testparamlearngspn.jl")
+end
 
 # @testset "Structure learning" begin
 # Not working

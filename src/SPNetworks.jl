@@ -38,7 +38,7 @@ include("Inference/MAP/MAP.jl")
 include("IO.jl")
 
 # For learning the parameters of SPNs
-# include("Learning/ParameterLearning.jl")
+include("Learning/ParameterLearning.jl")
 
 # For learning the structure of SPNs
 # include("Learning/StructureLearning.jl")
