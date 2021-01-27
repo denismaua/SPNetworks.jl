@@ -84,7 +84,11 @@ function step(learner::EMParamLearner, spn::SumProductNetwork, Data::AbstractMat
         backpropagate!(diff,spn,values) # backpropagate derivatives
         for i in sumnodes
             for (k,j) in enumerate(spn[i].children)
-                cache[i].weights[k] += spn[i].weights[k]*diff[i]*exp(values[j]-lv)
+                # @assert isfinite(diff[i]) "derivative of node $i is not finite: $(diff[i])"
+                # @assert !isnan(values[j]) "value of node $j is NaN: $(values[j])"
+                δ = spn[i].weights[k]*diff[i]*exp(values[j]-lv) # improvement
+                @assert isfinite(δ) "improvement to weight ($i,$j) is not finite: $δ, $(diff[i]), $(values[j]), $(exp(values[j]-lv))"
+                cache[i].weights[k] += δ
             end
     #         # for j in children(spn,i) #spn._backward[i]
     #         #     oldweights[j,i] += spn._weights[j,i]*diff[i]*exp(values[j]-lv)

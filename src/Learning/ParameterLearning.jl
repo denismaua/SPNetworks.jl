@@ -82,9 +82,16 @@ function backpropagate!(diff::Vector{Float64},spn::SumProductNetwork,values::Vec
             for (k,j) in enumerate(node.children)
                @inbounds diff[j] += node.weights[k]*diff[i]
             end
-        elseif isprod(spn[i])
-            for j in node.children                
-                @inbounds diff[j] += diff[i]*exp(values[i]-values[j])
+        elseif isprod(node)
+            for j in node.children   
+                if isfinite(values[j])
+                    # @assert isfinite(exp(values[i]-values[j]))  "contribution to derivative of ($i,$j) is not finite: $(values[i]), $(values[j]), $(exp(values[i]-values[j]))"
+                    @inbounds diff[j] += diff[i]*exp(values[i]-values[j])
+                else
+                    δ = exp(sum(values[k] for k in node.children if k ≠ j))
+                    # @assert isfinite(δ)  "contribution to derivative of ($i,$j) is not finite: $(values[i]), $(values[j]), $(δ)"
+                    @inbounds diff[j] += diff[i]*δ
+                end
             end
         end
     end
