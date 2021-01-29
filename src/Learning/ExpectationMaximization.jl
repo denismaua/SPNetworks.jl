@@ -11,8 +11,7 @@ prevscore::Float64 # for checking convergence
 tolerance::Float64 # tolerance for convergence criterion
 steps::Integer   # number of learning steps (epochs)
 minimumvariance::Float64 # minimum variance for Gaussian leaves
-#EMParamLearner(spn,dataset) = new(spn,dataset,NaN,NaN,1e-8,0)
-EMParamLearner() = new(NaN,NaN,1e-8,0,0.5)
+EMParamLearner() = new(NaN,NaN,1e-3,0,0.5)
 #TODO: use sparse tensor of weight updates
 end
 
@@ -41,13 +40,14 @@ Requires at least 2 steps of optimization.
 """
 converged(learner::EMParamLearner) = learner.steps < 2 ? false : abs(learner.score - learner.prevscore) < learner.tolerance
 
+# TODO: take filename os CSV File object as input and iterate over file to decreae memory footprint
 """
-    Improvement step for learning weights using the Expectation Maximization algorithm. 
+    Improvement step for learning weights using the Expectation Maximization algorithm. Returns improvement in negative loglikelihood.
 
     spn[i].weights[j] = spn[i].weights[k] * backpropagate(spn)[i]/sum(spn[i].weights[k] * backpropagate(spn)[i] for k=1:length(spn[i].children))
     minimumvariance: minimum variance for Gaussian leaves
 """
-function step(learner::EMParamLearner, spn::SumProductNetwork, Data::AbstractMatrix, minimumvariance::Float64 = learner.minimumvariance)
+function update(learner::EMParamLearner, spn::SumProductNetwork, Data::AbstractMatrix, minimumvariance::Float64 = learner.minimumvariance)
     
     # regularization constant for logweights (to avoid degenerate cases)
     τ = 1e-2
@@ -76,6 +76,7 @@ function step(learner::EMParamLearner, spn::SumProductNetwork, Data::AbstractMat
     # end
     diff = zeros(Float64,length(spn))
     values = similar(diff)
+    # TODO parallalize this to exploit multicore
     for t = 1:numrows
         datum = view(Data,t,:)
         lv = logpdf!(values,spn,datum) # propagate input Data[i,:]
@@ -156,6 +157,6 @@ function step(learner::EMParamLearner, spn::SumProductNetwork, Data::AbstractMat
     learner.steps += 1
     learner.prevscore = learner.score
     learner.score = -score/numrows
-    return learner.score
+    return learner.prevscore-learner.score
 end
 

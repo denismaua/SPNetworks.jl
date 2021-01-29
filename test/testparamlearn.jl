@@ -2,8 +2,8 @@
 
 @testset "SPN parameter learning" begin
 
-    import SPNetworks: NLL, MAE
-    import SPNetworks.ParameterLearning: EMParamLearner, initialize, converged, step, backpropagate
+    import SPNetworks: NLL
+    import SPNetworks.ParameterLearning: EMParamLearner, initialize, converged, update, backpropagate
 
     @testset "Simple DAG SPN" begin
 
@@ -50,7 +50,7 @@
         #initialize(SPN)
         # @info "Running Expectation Maximization until convergence..."
         while !converged(learner) && learner.steps < 10
-            step(learner,SPN,data)
+            update(learner,SPN,data)
             # println("It: $(learner.steps) \t NLL: $(learner.score)")
             # println("It: $(learner.steps) \t NLL: $(learner.score) \t MAE: $error")
         end
@@ -71,48 +71,53 @@
         @test Z ≈ 1.0
 
     end
-    @testset "Breast-Cancer SPN" begin
+    # @testset "Breast-Cancer SPN" begin
+    #     # load larger SPN
+    #     SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"); offset = 1)
+    #     @show summary(SPN)
+    #     # Generate dataset
+    #     N = 3000
+    #     data = rand(SPN, N)
+    #     nll = NLL(SPN, data)
+    #     learner = EMParamLearner()
+    #     #initialize(SPN)
+    #     while !converged(learner) && learner.steps < 2
+    #         update(learner, SPN, data)
+    #         println("It: $(learner.steps) \t NLL: $(learner.score)")
+    #     end
+    #     # # Training set NLL must be smaller than sampling distribution's training set NLL        
+    #     @test learner.score < nll
+    # end
+    @testset "NLTCS SPN" begin
+        using DataFrames, CSV
         # load larger SPN
-        SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"); offset = 1)
+        SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/nltcs.spn"); offset=1)
         @show summary(SPN)
-        # Generate dataset
-        N = 1000
-        data = rand(SPN,N)
-        test = rand(SPN,N)
-        nll = NLL(SPN,data)
+        # Load datasets
+        tdata = convert(Matrix,
+                 DataFrame(CSV.File(normpath("$(@__DIR__)/../assets/nltcs.train.csv"), 
+                    header=collect(1:16) # columns names
+        ))) .+ 1;
+        @show summary(tdata)
+        vdata = convert(Matrix,
+                    DataFrame(CSV.File(normpath("$(@__DIR__)/../assets/nltcs.valid.csv"), 
+                      header=collect(1:16) # columns names
+        ))) .+ 1;
+        @show summary(vdata)
+        # initialize EM learner
         learner = EMParamLearner()
         #initialize(SPN)
-        # # @info "Running Expectation Maximization until convergence..."
-        println("It: 0 \t NLL: $nll \t test NLL: $(NLL(SPN,test))")
-        while !converged(learner) && learner.steps < 2
-            step(learner,SPN,data)
-            if learner.steps % 2 == 0            
-                tnll = NLL(SPN,test)
-                println("It: $(learner.steps) \t NLL: $(learner.score) \t test NLL: $tnll")
+        # Running Expectation Maximization
+        while !converged(learner) && learner.steps < 15
+            update(learner,SPN,tdata)
+            if learner.steps % 2 == 1          
+                tnll = NLL(SPN,vdata)
+                println("It: $(learner.steps) \t NLL: $(learner.score) \t held-out NLL: $tnll")
             else
                 println("It: $(learner.steps) \t NLL: $(learner.score)")
             end
-        #     # println("It: $(learner.steps) \t NLL: $(learner.score) \t MAE: $error")
         end
-        # # Training set NLL must be smaller than sampling distribution's training set NLL        
-        @test learner.score < nll
-        # @test MAE(SPN,SPN2,data) < 0.02
 
-        # println()
-        # Z = 0.0
-        # # test on first 100 instances
-        # @testset "Evaluation at $(i)th instance" for i=1:100
-        #     x = data[i,:]
-        #     est = SPN(x)
-        #     # empirical distribution
-        #     emp = sum(1.0 for k=1:N if data[k,:] == x)/N
-        #     println("S($x) = $est ≈ $emp")
-        #     #@test est ≈ emp atol=0.05
-        #     # @test ref ≈ est atol=0.01
-        #     Z += est
-        # end
-        #@test Z ≈ 1.0
-    end
-    #TODO test with nltcs network using train/valid/test split
+    end    
 end # END of test set
 
