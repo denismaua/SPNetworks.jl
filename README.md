@@ -37,7 +37,7 @@ The internal nodes represent convex combinations and products, and the leaves re
 
 ### Learning
 
-- _TODO_: EM parameter learning for Categorical and Gaussian SPNs (numerically unstable)
+- EM parameter learning for Categorical and Gaussian SPNs (_TODO_); currently, learns only weights (i.e., does not learn leaf distributions)
 - _TODO_: Structure learning by LearnSPN
 - _TODO_: Mixture of Chow-Liu Trees
 
@@ -111,6 +111,35 @@ query = Set([1,2,3]) # variables to be maximized (all) -- non-evidence, non-quer
 mp = maxproduct!(evidence, selspn, query) # run maxproduct and store solution in evidence
 println("MaxProduct(A=$(evidence[1]),B=$(evidence[2]),C=$(evidence[3])) -> $(exp(mp))")
 @show logpdf(selspn,evidence) # compute log-probability of solution
+
+# Parameter learning
+## Create some SPN with indicator distributions at leaves
+SPN = SumProductNetwork(
+    [
+        SumNode([2,3,4],[0.2,0.5,0.3]),        # 1
+        ProductNode([5,7]),                    # 2
+        ProductNode([5,8]),                    # 3
+        ProductNode([6,8]),                    # 4
+        SumNode([9,10],[0.6,0.4]),             # 5
+        SumNode([9,10],[0.1,0.9]),             # 6
+        SumNode([11,12],[0.3,0.7]),            # 7
+        SumNode([11,12],[0.8,0.2]),            # 8
+        IndicatorFunction(1, 1.),              # 9
+        IndicatorFunction(1, 2.),              # 10
+        IndicatorFunction(2, 1.),              # 11
+        IndicatorFunction(2, 2.)               # 12
+    ]
+)        
+# Generate data
+N = 3000
+data = rand(SPN,N)
+# Instantiate learner
+learner = EMParamLearner()
+# Run EM for 10 iterations
+while learner.steps < 10    
+    update(learner, SPN, data)
+    println("It: $(learner.steps) \t NLL: $(learner.score)")
+end
 ```
 
 ## License

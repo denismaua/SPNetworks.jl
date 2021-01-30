@@ -122,8 +122,9 @@ function update(learner::EMParamLearner, spn::SumProductNetwork, Data::AbstractM
     # # add regularizer to avoid degenerate distributions
     # newweights =  log.(newweights) .+ maxweights
     for i in sumnodes
-        Z = sum(cache[i].weights)
-        spn[i].weights .= cache[i].weights ./ Z
+        Z = 1.0/sum(cache[i].weights)
+        spn[i].weights .= cache[i].weights .* Z
+        #@assert sum(spn[i].weights) ≈ 1.0 "Unormalized weight vector: $(sum(spn[i].weights)) | $(spn[i].weights)"
         # for (k,j) in enumerate(spn[i].children)
         #     # spn[i].weights .*= cache[i].weights
             # Z = sum(spn[i].weights)

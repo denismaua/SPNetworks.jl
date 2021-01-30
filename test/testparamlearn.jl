@@ -50,7 +50,7 @@
         #initialize(SPN)
         # @info "Running Expectation Maximization until convergence..."
         while !converged(learner) && learner.steps < 10
-            update(learner,SPN,data)
+            update(learner, SPN, data)
             # println("It: $(learner.steps) \t NLL: $(learner.score)")
             # println("It: $(learner.steps) \t NLL: $(learner.score) \t MAE: $error")
         end
@@ -71,53 +71,54 @@
         @test Z ≈ 1.0
 
     end
-    # @testset "Breast-Cancer SPN" begin
-    #     # load larger SPN
-    #     SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"); offset = 1)
-    #     @show summary(SPN)
-    #     # Generate dataset
-    #     N = 3000
-    #     data = rand(SPN, N)
-    #     nll = NLL(SPN, data)
-    #     learner = EMParamLearner()
-    #     #initialize(SPN)
-    #     while !converged(learner) && learner.steps < 2
-    #         update(learner, SPN, data)
-    #         println("It: $(learner.steps) \t NLL: $(learner.score)")
-    #     end
-    #     # # Training set NLL must be smaller than sampling distribution's training set NLL        
-    #     @test learner.score < nll
-    # end
-    @testset "NLTCS SPN" begin
-        using DataFrames, CSV
+    @testset "Breast-Cancer SPN" begin
         # load larger SPN
-        SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/nltcs.spn"); offset=1)
-        @show summary(SPN)
-        # Load datasets
-        tdata = convert(Matrix,
-                 DataFrame(CSV.File(normpath("$(@__DIR__)/../assets/nltcs.train.csv"), 
-                    header=collect(1:16) # columns names
-        ))) .+ 1;
-        @show summary(tdata)
-        vdata = convert(Matrix,
-                    DataFrame(CSV.File(normpath("$(@__DIR__)/../assets/nltcs.valid.csv"), 
-                      header=collect(1:16) # columns names
-        ))) .+ 1;
-        @show summary(vdata)
-        # initialize EM learner
+        SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/breast-cancer.spn"); offset = 1)
+        #@show summary(SPN)
+        # Generate dataset
+        N = 3000
+        data = rand(SPN, N)
+        nll = NLL(SPN, data)
         learner = EMParamLearner()
         #initialize(SPN)
-        # Running Expectation Maximization
-        while !converged(learner) && learner.steps < 15
-            update(learner,SPN,tdata)
-            if learner.steps % 2 == 1          
-                tnll = NLL(SPN,vdata)
-                println("It: $(learner.steps) \t NLL: $(learner.score) \t held-out NLL: $tnll")
-            else
-                println("It: $(learner.steps) \t NLL: $(learner.score)")
-            end
+        while !converged(learner) && learner.steps < 2
+            update(learner, SPN, data)
+            #println("It: $(learner.steps) \t NLL: $(learner.score)")
         end
+        # # Training set NLL must be smaller than sampling distribution's training set NLL        
+        @test learner.score < nll
+    end
+    # @testset "NLTCS SPN" begin
+    #     using DataFrames, CSV
+    #     # load larger SPN
+    #     SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/nltcs.spn"); offset=1)
+    #     @show summary(SPN)
+    #     # Load datasets
+    #     tdata = convert(Matrix,
+    #              DataFrame(CSV.File(normpath("$(@__DIR__)/../assets/nltcs.train.csv"), 
+    #                 header=collect(1:16) # columns names
+    #     ))) .+ 1;
+    #     @show summary(tdata)
+    #     vdata = convert(Matrix,
+    #                 DataFrame(CSV.File(normpath("$(@__DIR__)/../assets/nltcs.valid.csv"), 
+    #                   header=collect(1:16) # columns names
+    #     ))) .+ 1;
+    #     @show summary(vdata)
+    #     # initialize EM learner
+    #     learner = EMParamLearner()
+    #     initialize(SPN)
+    #     # Running Expectation Maximization
+    #     while !converged(learner) && learner.steps < 10
+    #         if learner.steps % 2 == 0          
+    #             tnll = NLL(SPN, vdata)
+    #             update(learner, SPN, tdata)
+    #             println("It: $(learner.steps) \t NLL: $(learner.score) \t held-out NLL: $tnll")
+    #         else
+    #             update(learner, SPN, tdata)
+    #             println("It: $(learner.steps) \t NLL: $(learner.score)")
+    #         end
+    #     end
 
-    end    
+    # end    
 end # END of test set
 
