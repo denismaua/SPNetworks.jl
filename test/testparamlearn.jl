@@ -46,11 +46,11 @@
         N = 3000
         data = rand(SPN,N)
 
-        learner = EMParamLearner()
-        #initialize(SPN)
+        learner = EMParamLearner(SPN)
+        #initialize(learner)
         # @info "Running Expectation Maximization until convergence..."
         while !converged(learner) && learner.steps < 10
-            update(learner, SPN, data)
+            update(learner, data)
             # println("It: $(learner.steps) \t NLL: $(learner.score)")
             # println("It: $(learner.steps) \t NLL: $(learner.score) \t MAE: $error")
         end
@@ -79,10 +79,10 @@
         N = 3000
         data = rand(SPN, N)
         nll = NLL(SPN, data)
-        learner = EMParamLearner()
-        #initialize(SPN)
+        learner = EMParamLearner(SPN)
+        #initialize(learner)
         while !converged(learner) && learner.steps < 2
-            update(learner, SPN, data)
+            update(learner, data)
             #println("It: $(learner.steps) \t NLL: $(learner.score)")
         end
         # # Training set NLL must be smaller than sampling distribution's training set NLL        
