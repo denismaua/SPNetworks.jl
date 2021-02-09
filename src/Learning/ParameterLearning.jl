@@ -74,7 +74,7 @@ function backpropagate!(diff::Vector{Float64},spn::SumProductNetwork,values::Vec
     # Assumes network has been evaluted at some assignment using logpdf!
     # Backpropagate derivatives
     @assert length(diff) == length(spn) == length(values)
-    fill!(diff,0.0) 
+    fill!(diff,0.0)
     @inbounds diff[1] = 1.0
     for i = 1:length(spn)
         @inbounds node = spn[i]

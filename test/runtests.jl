@@ -6,11 +6,11 @@ import SPNetworks: SumNode, ProductNode, CategoricalDistribution, IndicatorFunct
 
 @testset "SPNetworks.jl" begin
 
-# @testset "Creation, evaluation, sampling" begin
-#     include("testspn.jl")
+@testset "Creation, evaluation, sampling" begin
+    include("testspn.jl")
 #     include("testgspn.jl")
-#     include("testeval.jl")
-# end
+    # include("testeval.jl")
+end
 
 # I/O
 # include("testio.jl")             
@@ -22,11 +22,11 @@ import SPNetworks: SumNode, ProductNode, CategoricalDistribution, IndicatorFunct
 #     # include("testspn2milp.jl")
 # end
 
-@testset "Parameter learning" begin
+#@testset "Parameter learning" begin
 # Not working
-  include("testparamlearn.jl")
+#  include("testparamlearn.jl")
 #   include("testparamlearngspn.jl")
-end
+#end
 
 # @testset "Structure learning" begin
 # Not working

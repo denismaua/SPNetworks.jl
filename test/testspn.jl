@@ -1,7 +1,9 @@
 # Test creation and evaluation of SPNs
-import SPNetworks: ncircuits, scopes
 
 @testset "Defining and evaluating discrete SPNs" begin
+    import SPNetworks: ncircuits, scopes
+    import SPNetworks: plogpdf
+
     @testset "Simple DAG SPN" begin
         SPN = SumProductNetwork(
             [
@@ -36,12 +38,14 @@ import SPNetworks: ncircuits, scopes
         results = [0.3, 0.15, 0.4, 0.15]
         @testset "Evaluation at $a,$b" for a=1:2, b=1:2
             @test SPN(a,b) ≈ results[2*(a-1) + b]
-            @test logpdf(SPN,[a,b]) ≈ log(SPN([a,b]))
+            @test logpdf(SPN,[a,b]) ≈ log(results[2*(a-1) + b])
+            @test plogpdf(SPN,[a,b]) ≈ log(results[2*(a-1) + b])
         end
         @testset "Marginalization" begin
             @test SPN(1,NaN) ≈ 0.45
             @test SPN(NaN,2) ≈ 0.3
-            @test logpdf(SPN,[NaN,2]) ≈ log(0.3)  
+            @test logpdf(SPN,[NaN,2]) ≈ log(0.3)          
+            @test plogpdf(SPN,[NaN,2]) ≈ log(0.3)          
         end
         @testset "Sampling" begin
             x = rand(SPN)
@@ -97,11 +101,14 @@ import SPNetworks: ncircuits, scopes
         @testset "Evaluating HMM at $a,$b,$c" for a=1:2, b=1:2, c=1:2
             v = HMM([a,b,c])
             @test v ≈ results[4*(a-1) + 2*(b-1) + c]
+            @test plogpdf(HMM, [a,b,c]) ≈ log(results[4*(a-1) + 2*(b-1) + c])
         end 
         # println("HMM() ≈ $(HMM([NaN,NaN,NaN]))")
         @test logpdf(HMM,[NaN,NaN,NaN]) ≈ 0.0
+        @test plogpdf(HMM,[NaN,NaN,NaN]) ≈ 0.0
         # println("HMM(X1=1) ≈ $(HMM([1,NaN,NaN]))")
         @test logpdf(HMM,[1,NaN,NaN]) ≈ log(0.65)
+        @test plogpdf(HMM,[1,NaN,NaN]) ≈ log(0.65)
         x = rand(HMM)
         @test length(x) == 3  
         x[3] = NaN
@@ -140,12 +147,14 @@ import SPNetworks: ncircuits, scopes
             v = selSPN(Float64[a,b,c])
             # println("SEL($a,$b,$c) = $v")
             @test v ≈ results[4*(a-1) + 2*(b-1) + c]
+            @test plogpdf(selSPN, [a,b,c]) ≈ log(results[4*(a-1) + 2*(b-1) + c])
         end    
         # println("- Selective SPN")
         value = selSPN([1,NaN,NaN])
         # println("S2(A=1) = $value")
         @test value ≈ 0.6
         @test logpdf(selSPN,[2,NaN,NaN]) ≈ log(0.4)
+        @test plogpdf(selSPN,[2,NaN,NaN]) ≈ log(0.4)
         # println()
         x = rand(selSPN)
         @test length(x) == 3    
@@ -183,6 +192,7 @@ import SPNetworks: ncircuits, scopes
             v = PSDD([a,b,c,d])
             # println("PSDD($a,$b,$c,$d) = $v")
             @test v ≈ results[8*(a-1) + 4*(b-1) + 2*(c-1) + d]
+            @test plogpdf(PSDD, [a,b,c,d]) ≈ log(results[8*(a-1) + 4*(b-1) + 2*(c-1) + d])
         end    
         @testset "Sampling" begin
             x = rand(PSDD)

@@ -99,7 +99,7 @@ function sort!(spn::SumProductNetwork)
    pa = zeros(length(spn))
    for (i,n) in enumerate(spn)
         if !isleaf(n)
-            for j in n.children            
+            @inbounds for j in n.children            
                 pa[j] += 1
             end
         end
@@ -117,7 +117,7 @@ function sort!(spn::SumProductNetwork)
         push!(closed, n)
         if !isleaf(spn[n])
             # append!(open, ch for ch in spn[n].children if !in(ch, visited) && !in(ch, open))
-            for j in spn[n].children
+            @inbounds for j in spn[n].children
                 pa[j] -= 1
                 if pa[j] == 0
                     push!(open, j)
@@ -127,13 +127,13 @@ function sort!(spn::SumProductNetwork)
     end
     @assert length(closed) == length(spn)
     inverse = similar(closed) # inverse mapping
-    for i=1:length(closed)
+    @inbounds for i=1:length(closed)
         inverse[closed[i]] = i
     end
     # permute nodes according to closed
     permute!(spn.nodes,closed) # is this faster than spn.nodes .= spn.nodes[closed]? 
     # now fix ids of children
-    for i=1:length(spn)
+    @inbounds for i=1:length(spn)
         if !isleaf(spn.nodes[i])
             for (j,ch) in enumerate(spn.nodes[i].children)
                 spn.nodes[i].children[j] = inverse[ch]
@@ -142,13 +142,50 @@ function sort!(spn::SumProductNetwork)
     end
     closed
 end
+
+"""
+    layers(spn::SumProductNetwork)
+
+Returns list of node layers. Each node in a layer is a function of nodes in previous layers. This allows parallelization when computing with the spn.
+Assume nodes are topologically sorted.
+"""
+function layers(spn::SumProductNetwork)    
+    nlayers = Vector()
+    push!(nlayers, Int[])
+    # Perform breadth-first search
+    depth = Array{Int}(undef,length(spn)) # computes depth of each node
+    # open nodes
+    open = Vector{Int}()
+    visited = Set{Int}()
+    push!(open, 1) # enqueue root node 
+    depth[1] = 1 # root node has depth 1
+    @inbounds while !isempty(open)
+        n = popfirst!(open) # dequeue node
+        if length(nlayers) >= depth[n]
+            push!(nlayers[depth[n]], n)
+        else
+            push!(nlayers, [n])
+        end
+        push!(visited, n)
+        if !isleaf(spn[n])
+            # append!(open, ch for ch in spn[n].children if !in(ch, visited) && !in(ch, open))
+            @inbounds for ch in spn[n].children 
+                if !in(ch, visited) && !in(ch, open)
+                    push!(open, ch)
+                    depth[ch] = depth[n] + 1
+                end
+            end
+        end
+    end
+    nlayers
+end
+
 """
     nodes(spn::SumProductNetwork)
 
 Collects the list of nodes in `spn`.
 """
 @inline nodes(spn::SumProductNetwork) = spn.nodes
-
 
 """
 Select nodes by topology

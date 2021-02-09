@@ -6,13 +6,15 @@ Learn weights using the Expectation Maximization algorithm.
 mutable struct EMParamLearner <: ParameterLearner
 spn::SumProductNetwork
 cache::SumProductNetwork
+diff::Vector{Float64} # to store derivatives
+values::Vector{Float64} # to store logprobabilities
 # dataset::AbstractMatrix
 score::Float64     # score (loglikelihood)
 prevscore::Float64 # for checking convergence
 tolerance::Float64 # tolerance for convergence criterion
 steps::Integer   # number of learning steps (epochs)
 minimumvariance::Float64 # minimum variance for Gaussian leaves
-EMParamLearner(spn::SumProductNetwork) = new(spn,deepcopy(spn),NaN,NaN,1e-3,0,0.5)
+EMParamLearner(spn::SumProductNetwork) = new(spn, deepcopy(spn), Array{Float64}(undef,length(spn)), Array{Float64}(undef,length(spn)), NaN, NaN, 1e-3, 0, 0.5)
 #TODO: use sparse tensor of weight updates
 end
 
@@ -77,8 +79,8 @@ function update(learner::EMParamLearner, Data::AbstractMatrix, learningrate::Flo
     # maxweights = similar(newweights)
     score = 0.0 # data loglikelihood
     sumnodes = filter(i -> isa(spn[i], SumNode), 1:length(spn))
-    for i in sumnodes        
-        @inbounds cache[i].weights .*= smoothing
+    @inbounds for i in sumnodes        
+        cache[i].weights .= smoothing
     end
     # gaussiannodes = filter(i -> isa(spn[i],GaussianDistribution), 1:length(spn))
     # if length(gaussiannodes) > 0
@@ -86,23 +88,25 @@ function update(learner::EMParamLearner, Data::AbstractMatrix, learningrate::Flo
     #     squares = Dict{Integer,Float64}(i => 0.0 for i in gaussiannodes)
     #     denon = Dict{Integer,Float64}(i => 0.0 for i in gaussiannodes)
     # end
-    diff = zeros(Float64,length(spn))
-    values = similar(diff)
-    # TODO parallalize this to exploit multicore
+    #diff = zeros(Float64, length(spn))
+    diff = learner.diff
+    values = learner.values
+    #values = similar(diff)
+    # TODO exploit multithreading
     for t = 1:numrows
-        datum = view(Data,t,:)
+        datum = view(Data, t, :)
         lv = logpdf!(values,spn,datum) # propagate input Data[i,:]
         @assert isfinite(lv) "logvalue of datum $t is not finite: $lv"
         score += lv
-        backpropagate!(diff,spn,values) # backpropagate derivatives
+        backpropagate!(diff, spn, values) # backpropagate derivatives
         for i in sumnodes
-            for (k,j) in enumerate(spn[i].children)
+            @inbounds for (k,j) in enumerate(spn[i].children)
                 # @assert isfinite(diff[i]) "derivative of node $i is not finite: $(diff[i])"
                 # @assert !isnan(values[j]) "value of node $j is NaN: $(values[j])"
                 if isfinite(values[j])
-                    @inbounds δ = spn[i].weights[k]*diff[i]*exp(values[j]-lv) # improvement
+                    δ = spn[i].weights[k]*diff[i]*exp(values[j]-lv) # improvement
                     @assert isfinite(δ) "improvement to weight ($i,$j):$(spn[i].weights[k]) is not finite: $δ, $(diff[i]), $(values[j]), $(exp(values[j]-lv))"
-                    @inbounds cache[i].weights[k] += δ
+                    cache[i].weights[k] += δ
                 end
             end
     #         # for j in children(spn,i) #spn._backward[i]
@@ -135,11 +139,11 @@ function update(learner::EMParamLearner, Data::AbstractMatrix, learningrate::Flo
     end
     # # add regularizer to avoid degenerate distributions
     # newweights =  log.(newweights) .+ maxweights
-    for i in sumnodes
-        @inbounds cache[i].weights .*= learningrate/sum(cache[i].weights) # normalize weights
-        @inbounds spn[i].weights .*= 1.0-learningrate # apply update with inertia strenght given by learning rate
+    @inbounds for i in sumnodes
+        cache[i].weights .*= learningrate/sum(cache[i].weights) # normalize weights
+        spn[i].weights .*= 1.0-learningrate # apply update with inertia strenght given by learning rate
         @assert sum(spn[i].weights) ≈ 1.0-learningrate "Unnormalized weight vector at node $i: $(sum(spn[i].weights)) | $(spn[i].weights)"
-        @inbounds spn[i].weights .+= cache[i].weights
+        spn[i].weights .+= cache[i].weights
         @assert sum(spn[i].weights) ≈ 1.0 "Unnormalized weight vector at node $i: $(sum(spn[i].weights)) | $(spn[i].weights) | $(cache[i].weights)"
         # for (k,j) in enumerate(spn[i].children)
         #     # spn[i].weights .*= cache[i].weights

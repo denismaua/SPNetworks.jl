@@ -16,14 +16,15 @@ batchsize = 100 # default
 if length(ARGS) >= 3
     batchsize = parse(Int, ARGS[4])
 end
+println("Maximum batchsize: $batchsize")
+println("Threads: ", Threads.nthreads())
 
+println("SPN: $spn_filename")
 spn = SumProductNetwork(spn_filename)
+@show summary(spn)
 #SPNetworks.save(spn,normpath("$train_filename"))
 nvars = length(scope(spn))
-println("SPN: $spn_filename ($(summary(spn)))")
 println("Training data: $train_filename")
-println("Validation data: $valid_filename")
-println("Maximum batchsize: $batchsize")
 # Load datasets
 tdata = convert(Matrix,
             DataFrame(
@@ -31,6 +32,7 @@ tdata = convert(Matrix,
                 header=collect(1:nvars) # columns names
 ))) .+ 1;
 @show summary(tdata)
+println("Validation data: $valid_filename")
 vdata = convert(Matrix,
             DataFrame(
                 CSV.File(valid_filename, 
@@ -43,15 +45,15 @@ println("It: $(learner.steps) \t NLL: $(learner.score) \t held-out NLL: $(NLL(sp
 initialize(learner) # generate random weights for each sum node
 indices = shuffle!(Vector(1:size(tdata,1)))
 # Running Expectation Maximization
-while !converged(learner) && learner.steps < 10
+while !converged(learner) && learner.steps < 11
     sid = rand(1:(length(indices)-batchsize))
     batch = view(tdata, indices[sid:(sid+batchsize-1)], :) # extract minibatch sample
     if learner.steps % 2 == 0          
         tnll = NLL(spn, vdata)
-        update(learner, batch, 0.9^learner.steps)
+        @time update(learner, batch, 0.9^learner.steps)
         println("It: $(learner.steps) \t NLL: $(learner.score) \t held-out NLL: $tnll")
     else
-        update(learner, batch, 0.9^learner.steps)
+        @time update(learner, batch, 0.9^learner.steps)
         println("It: $(learner.steps) \t NLL: $(learner.score)")
     end
 end

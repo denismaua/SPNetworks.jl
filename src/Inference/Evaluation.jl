@@ -39,10 +39,11 @@ end
 """
     logpdf(spn, X)
 
-Returns the sums of the log-probabilities of instances `x` in `X`.
+Returns the sums of the log-probabilities of instances `x` in `X`. Uses multithreading to speed up computations if `JULIA_NUM_THREADS > 1`.
 
 # Parameters
 
+- `spn`: Sum-Product Network
 - `X`: matrix of values of variables (integers or reals). Summed-out variables are represented as `NaN`s.
 """
 function logpdf(spn::SumProductNetwork, X::AbstractMatrix{<:Real})::Float64
@@ -58,6 +59,27 @@ function logpdf(spn::SumProductNetwork, X::AbstractMatrix{<:Real})::Float64
         Threads.atomic_add!(s, logpdf!(view(values,:,Threads.threadid()),spn,view(X,i,:)))
     end
     s[]
+end
+
+"""
+    logpdf!(values, spn, X)
+
+Computes log-probabilities of instances `x` in `X` and stores the results in a given vector. Uses multithreading to speed up computations.
+
+# Parameters
+
+- `results`: vector to store results (log-probabilities)
+- `spn`: Sum-Product Network
+- `X`: matrix of values of variables (integers or reals). Summed-out variables are represented as `NaN`s.
+"""
+function logpdf!(results::AbstractVector{<:Real}, spn::SumProductNetwork, X::AbstractMatrix{<:Real})
+    @assert length(results) == size(X,1)
+    # multi-threaded version
+    values = Array{Float64}(undef,length(spn),Threads.nthreads())
+    Threads.@threads for i=1:size(X,1)
+        @inbounds results[i] = logpdf!(view(values,:,Threads.threadid()), spn, view(X,i,:))
+    end
+    Nothing
 end
 
 """
@@ -88,7 +110,7 @@ end
 """
     logpdf!(values,spn,x)
 
-Evaluates the sum-product network `spn` in log domain at configuration `x` and stores values of each node in the vector values.
+Evaluates the sum-product network `spn` in log domain at configuration `x` and stores values of each node in the vector `values`.
 """
 function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::AbstractVector{<:Real})::Float64
     # @assert length(values) == length(spn)
@@ -97,19 +119,19 @@ function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::Abs
         @inbounds node = spn[i]
         if isprod(node)
             lval = 0.0
-            for j in node.children
-                @inbounds lval += values[j]
+            @inbounds for j in node.children
+                lval += values[j]
             end
             @inbounds values[i] = isfinite(lval) ? lval : -Inf
         elseif issum(node)
             # log trick to improve numerical stability
             m = -Inf
-            for j in node.children
-                @inbounds m = values[j] > m ? values[j] : m
+            @inbounds for j in node.children
+                m = values[j] > m ? values[j] : m
             end
             lval = 0.0
-            for (k,j) in enumerate(node.children)
-                @inbounds lval += exp(values[j]-m)*node.weights[k]
+            @inbounds for (k,j) in enumerate(node.children)
+                lval += exp(values[j]-m)*node.weights[k]
             end
             @inbounds values[i] = isfinite(lval) ? log(lval)+m : -Inf
         else # is a leaf node
@@ -118,6 +140,55 @@ function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::Abs
     end
     @inbounds return values[1]
 end
+
+"""
+    plogpdf!(values,spn,layers,x)
+
+Evaluates the sum-product network `spn` in log domain at configuration `x` using the scheduling in `nlayers` as obtained by the method `layers(spn)`. Stores values of each node in the vector `values`.
+
+# Parameters
+
+- `values`: vector to cache node values
+- `spn`: the sum product network
+- `nlayers`: Vector of vector of node indices determinig the layers of the `spn`; each node in a layer is computed based on values of nodes in smaller layers.
+- `x`: Vector containing assignment
+
+"""
+function plogpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, nlayers, x::AbstractVector{<:Real})::Float64
+    # visit layers from last to first
+    for l in length(nlayers):-1:1
+        # TODO:  parallelize computations within layer
+        for i in nlayers[l]
+            @inbounds node = spn[i]
+            if isprod(node)
+                lval = 0.0
+                @inbounds for j in node.children
+                    lval += values[j]
+                end
+                @inbounds values[i] = isfinite(lval) ? lval : -Inf
+            elseif issum(node)
+                # log trick to improve numerical stability
+                m = -Inf
+                @inbounds for j in node.children
+                    m = values[j] > m ? values[j] : m
+                end
+                lval = 0.0
+                @inbounds for (k,j) in enumerate(node.children)
+                    lval += exp(values[j]-m)*node.weights[k]
+                end
+                @inbounds values[i] = isfinite(lval) ? log(lval)+m : -Inf
+            else # is a leaf node
+                @inbounds values[i] = logpdf(node,x[node.scope])
+            end
+        end
+    end
+    @inbounds return values[1]
+end
+function plogpdf(spn::SumProductNetwork, x::AbstractVector{<:Real})::Float64
+    values = Array{Float64}(undef,length(spn))
+    return plogpdf!(values,spn,layers(spn),x)
+end
+
 
 """ 
     sample(weights)::UInt
