@@ -155,10 +155,10 @@ Evaluates the sum-product network `spn` in log domain at configuration `x` using
 
 """
 function plogpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, nlayers, x::AbstractVector{<:Real})::Float64
-    # visit layers from last to first
+    # visit layers from last (leaves) to first (root)
     for l in length(nlayers):-1:1
-        # TODO:  parallelize computations within layer
-        for i in nlayers[l]
+        # parallelize computations within layer
+        Threads.@threads for i in nlayers[l]
             @inbounds node = spn[i]
             if isprod(node)
                 lval = 0.0
@@ -184,6 +184,12 @@ function plogpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, nlaye
     end
     @inbounds return values[1]
 end
+
+"""
+    plogpdf(spn, x)
+
+Parallelized version of `logpdf(spn, x)`. Set `JULIA_NUM_THREADS` > 1 to make this effective.
+"""
 function plogpdf(spn::SumProductNetwork, x::AbstractVector{<:Real})::Float64
     values = Array{Float64}(undef,length(spn))
     return plogpdf!(values,spn,layers(spn),x)
@@ -193,7 +199,11 @@ end
 """ 
     sample(weights)::UInt
 
-Sample integer with probability proportional to given weights. 
+Sample integer with probability proportional to given `weights`. 
+
+# Parameters
+
+- `weights`: vector of nonnegative reals.
 """
 function sample(weights)::UInt
     Z = sum(weights)

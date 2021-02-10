@@ -12,6 +12,7 @@
     # println("Testset has $(size(testset,1)) instances, $(size(testset,2)) columns.")
     test = convert(Matrix, testset) .+ 1
     @test logpdf(SPN,test) ≈ -19582.020235794218 #-21281.999990461
+    @test plogpdf(SPN,test) ≈ -19582.020235794218 #-21281.999990461
     # @btime logpdf($SPN,$test)
     
     # SPN = SumProductNetwork(normpath("$(@__DIR__)/../assets/nltcs.learnspn.em.spn"))

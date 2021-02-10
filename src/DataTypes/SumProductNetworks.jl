@@ -147,37 +147,30 @@ end
     layers(spn::SumProductNetwork)
 
 Returns list of node layers. Each node in a layer is a function of nodes in previous layers. This allows parallelization when computing with the spn.
-Assume nodes are topologically sorted.
+Assume nodes are topologically sorted (e.g. by calling `sort!(spn)`).
 """
 function layers(spn::SumProductNetwork)    
-    nlayers = Vector()
-    push!(nlayers, Int[])
-    # Perform breadth-first search
-    depth = Array{Int}(undef,length(spn)) # computes depth of each node
-    # open nodes
-    open = Vector{Int}()
-    visited = Set{Int}()
-    push!(open, 1) # enqueue root node 
-    depth[1] = 1 # root node has depth 1
-    @inbounds while !isempty(open)
-        n = popfirst!(open) # dequeue node
-        if length(nlayers) >= depth[n]
-            push!(nlayers[depth[n]], n)
-        else
-            push!(nlayers, [n])
-        end
-        push!(visited, n)
-        if !isleaf(spn[n])
-            # append!(open, ch for ch in spn[n].children if !in(ch, visited) && !in(ch, open))
-            @inbounds for ch in spn[n].children 
-                if !in(ch, visited) && !in(ch, open)
-                    push!(open, ch)
-                    depth[ch] = depth[n] + 1
-                end
+    layer = zeros(length(spn)) # will contain the layer of each node
+    layer[1] = 1 # root node is first layer
+    for i = 1:length(spn)
+        # travesrse nodes in topological order
+        if !isleaf(spn[i])
+            @inbounds for j in spn[i].children
+                # child j cannot be in same layer as i, for all i < j
+                layer[j] = max(layer[j], layer[i] + 1)
             end
         end
     end
-    nlayers
+    # get number of layers
+    nlayers = maximum(layer)
+    # obtain layers (this is quadratic runtime -- can probably be improved to n log n)
+    thelayers = Vector()
+    @inbounds for l = 1:nlayers
+        # collect all nodes in layer l
+        thislayer = filter( i -> (layer[i] == l), 1:length(spn) )
+        push!(thelayers, thislayer)
+    end
+    thelayers
 end
 
 """

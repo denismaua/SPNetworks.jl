@@ -41,11 +41,12 @@ vdata = convert(Matrix,
 @show summary(vdata)
 # initialize EM learner
 learner = EMParamLearner(spn)
-println("It: $(learner.steps) \t NLL: $(learner.score) \t held-out NLL: $(NLL(spn, vdata))")
-initialize(learner) # generate random weights for each sum node
+Random.seed!(3)
+#println("It: $(learner.steps) \t NLL: $(learner.score) \t held-out NLL: $(NLL(spn, vdata))")
+#initialize(learner) # generate random weights for each sum node
 indices = shuffle!(Vector(1:size(tdata,1)))
 # Running Expectation Maximization
-while !converged(learner) && learner.steps < 11
+while !converged(learner) && learner.steps < 2 # 11
     sid = rand(1:(length(indices)-batchsize))
     batch = view(tdata, indices[sid:(sid+batchsize-1)], :) # extract minibatch sample
     if learner.steps % 2 == 0          
