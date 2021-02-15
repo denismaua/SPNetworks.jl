@@ -124,18 +124,21 @@ function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::Abs
             end
             @inbounds values[i] = isfinite(lval) ? lval : -Inf
         elseif issum(node)
-            # log trick to improve numerical stability
+            # log-sum-exp trick to improve numerical stability
             m = -Inf
+            # get maximum incoming value
             @inbounds for j in node.children
                 m = values[j] > m ? values[j] : m
             end
             lval = 0.0
             @inbounds for (k,j) in enumerate(node.children)
+                # ensure exp in only computed on nonpositive arguments (avoid overflow)
                 lval += exp(values[j]-m)*node.weights[k]
             end
-            @inbounds values[i] = isfinite(lval) ? log(lval)+m : -Inf
+            # if something went wrong (e.g. incoming value is NaN or Inf) return -Inf
+            @inbounds values[i] = isfinite(lval) ? m + log(lval) : -Inf
         else # is a leaf node
-            @inbounds values[i] = logpdf(node,x[node.scope])
+            @inbounds values[i] = logpdf(node, x[node.scope])
         end
     end
     @inbounds return values[1]
@@ -167,18 +170,22 @@ function plogpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, nlaye
                 end
                 @inbounds values[i] = isfinite(lval) ? lval : -Inf
             elseif issum(node)
-                # log trick to improve numerical stability
+                # log-sum-exp trick to improve numerical stability (assumes weights are normalized)
                 m = -Inf
+                # get maximum incoming value
                 @inbounds for j in node.children
                     m = values[j] > m ? values[j] : m
                 end
                 lval = 0.0
                 @inbounds for (k,j) in enumerate(node.children)
+                    # ensure exp in only computed on nonpositive arguments (avoid overflow)
                     lval += exp(values[j]-m)*node.weights[k]
                 end
-                @inbounds values[i] = isfinite(lval) ? log(lval)+m : -Inf
+                # if something went wrong (e.g. incoming value is NaN or Inf) return -Inf, otherwise
+                # return maximum plus lval (adding m ensures signficant digits are numerically precise)
+                @inbounds values[i] = isfinite(lval) ? m+log(lval) : -Inf
             else # is a leaf node
-                @inbounds values[i] = logpdf(node,x[node.scope])
+                @inbounds values[i] = logpdf(node, x[node.scope])
             end
         end
     end
