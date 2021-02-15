@@ -92,9 +92,9 @@ Evaluates leaf `node` at the given `value` in log domain.
 """
 @inline logpdf(n::IndicatorFunction, value::Integer) = isnan(value) ? 0.0 : value == Int(n.value) ? 0.0 : -Inf
 @inline logpdf(n::IndicatorFunction, value::Float64) = isnan(value) ? 0.0 : abs(value - n.value) < n.tolerance  ? 0.0 : -Inf
-@inline logpdf(n::CategoricalDistribution, value::Integer) = @inbounds log(n.values[value])
+@inline logpdf(n::CategoricalDistribution, value::Integer) = log(n.values[value])
 @inline logpdf(n::CategoricalDistribution, value::Float64) = isnan(value) ? 0.0 : logpdf(n,Int(value))
-@inline logpdf(n::GaussianDistribution, value::Float64)::Float64 = @inbounds isnan(value) ? 0.0 : (-(value-n.mean)^2/(2*n.variance)) - log(2*π*n.variance)/2
+@inline logpdf(n::GaussianDistribution, value::Float64)::Float64 = isnan(value) ? 0.0 : (-(value-n.mean)^2/(2*n.variance)) - log(2*π*n.variance)/2
 """
     maximum(node)
 

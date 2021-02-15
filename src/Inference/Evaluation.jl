@@ -115,30 +115,30 @@ Evaluates the sum-product network `spn` in log domain at configuration `x` and s
 function logpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, x::AbstractVector{<:Real})::Float64
     # @assert length(values) == length(spn)
     # traverse nodes in reverse topological order (bottom-up)
-    for i in length(spn):-1:1
-        @inbounds node = spn[i]
+    @inbounds for i in length(spn):-1:1
+        node = spn[i]
         if isprod(node)
             lval = 0.0
-            @inbounds for j in node.children
+            for j in node.children
                 lval += values[j]
             end
-            @inbounds values[i] = isfinite(lval) ? lval : -Inf
+            values[i] = isfinite(lval) ? lval : -Inf
         elseif issum(node)
             # log-sum-exp trick to improve numerical stability
             m = -Inf
             # get maximum incoming value
-            @inbounds for j in node.children
+            for j in node.children
                 m = values[j] > m ? values[j] : m
             end
             lval = 0.0
-            @inbounds for (k,j) in enumerate(node.children)
+            for (k,j) in enumerate(node.children)
                 # ensure exp in only computed on nonpositive arguments (avoid overflow)
                 lval += exp(values[j]-m)*node.weights[k]
             end
             # if something went wrong (e.g. incoming value is NaN or Inf) return -Inf
-            @inbounds values[i] = isfinite(lval) ? m + log(lval) : -Inf
+            values[i] = isfinite(lval) ? m + log(lval) : -Inf
         else # is a leaf node
-            @inbounds values[i] = logpdf(node, x[node.scope])
+            values[i] = logpdf(node, x[node.scope])
         end
     end
     @inbounds return values[1]
@@ -159,33 +159,33 @@ Evaluates the sum-product network `spn` in log domain at configuration `x` using
 """
 function plogpdf!(values::AbstractVector{Float64}, spn::SumProductNetwork, nlayers, x::AbstractVector{<:Real})::Float64
     # visit layers from last (leaves) to first (root)
-    for l in length(nlayers):-1:1
+    @inbounds for l in length(nlayers):-1:1
         # parallelize computations within layer
         Threads.@threads for i in nlayers[l]
-            @inbounds node = spn[i]
+            node = spn[i]
             if isprod(node)
                 lval = 0.0
-                @inbounds for j in node.children
+                for j in node.children
                     lval += values[j]
                 end
-                @inbounds values[i] = isfinite(lval) ? lval : -Inf
+                values[i] = isfinite(lval) ? lval : -Inf
             elseif issum(node)
                 # log-sum-exp trick to improve numerical stability (assumes weights are normalized)
                 m = -Inf
                 # get maximum incoming value
-                @inbounds for j in node.children
+                for j in node.children
                     m = values[j] > m ? values[j] : m
                 end
                 lval = 0.0
-                @inbounds for (k,j) in enumerate(node.children)
+                for (k,j) in enumerate(node.children)
                     # ensure exp in only computed on nonpositive arguments (avoid overflow)
                     lval += exp(values[j]-m)*node.weights[k]
                 end
                 # if something went wrong (e.g. incoming value is NaN or Inf) return -Inf, otherwise
                 # return maximum plus lval (adding m ensures signficant digits are numerically precise)
-                @inbounds values[i] = isfinite(lval) ? m+log(lval) : -Inf
+                values[i] = isfinite(lval) ? m+log(lval) : -Inf
             else # is a leaf node
-                @inbounds values[i] = logpdf(node, x[node.scope])
+                values[i] = logpdf(node, x[node.scope])
             end
         end
     end
