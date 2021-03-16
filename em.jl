@@ -1,5 +1,8 @@
 # Compares EM variants on given network structure
-using DataFrames, CSV
+# Example of commaind line call: 
+#     export JULIA_NUM_THREADS=4; julia --color=yes em.jl assets/nltcs.spn assets/nltcs.train.csv assets/nltcs.valid.csv 100 
+#using DataFrames, CSV
+using DelimitedFiles # much faster than above
 using Random
 using SPNetworks
 import SPNetworks: NLL
@@ -26,18 +29,24 @@ spn = SumProductNetwork(spn_filename)
 nvars = length(scope(spn))
 println("Training data: $train_filename")
 # Load datasets
-tdata = convert(Matrix,
-            DataFrame(
-                CSV.File(train_filename, 
-                header=collect(1:nvars) # columns names
-))) .+ 1;
+# @time tdata = convert(Matrix{Float64},
+#             DataFrame(
+#                 CSV.File(train_filename, 
+#                     header=collect(1:nvars) # columns names
+#                 ) 
+#             )
+#         ) .+ 1;
+@time tdata = readdlm(train_filename, ',', Float64) .+ 1;
 @show summary(tdata)
 println("Validation data: $valid_filename")
-vdata = convert(Matrix,
-            DataFrame(
-                CSV.File(valid_filename, 
-                header=collect(1:nvars) # columns names
-))) .+ 1;
+@time vdata = readdlm(valid_filename, ',', Float64) .+ 1;
+# @time vdata = convert(Matrix{Float64},
+#             DataFrame(
+#                 CSV.File(valid_filename, 
+#                     header=collect(1:nvars) # columns names
+#                 ) 
+#             )
+#         ) .+ 1;
 @show summary(vdata)
 # initialize EM learner
 learner = EMParamLearner(spn)
@@ -46,7 +55,7 @@ Random.seed!(3)
 #initialize(learner) # generate random weights for each sum node
 indices = shuffle!(Vector(1:size(tdata,1)))
 # Running Expectation Maximization
-while !converged(learner) && learner.steps < 2 # 11
+while !converged(learner) && learner.steps < 3 # 11
     sid = rand(1:(length(indices)-batchsize))
     batch = view(tdata, indices[sid:(sid+batchsize-1)], :) # extract minibatch sample
     if learner.steps % 2 == 0          
