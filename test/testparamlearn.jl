@@ -3,7 +3,7 @@
 @testset "SPN parameter learning" begin
 
     import SPNetworks: NLL
-    import SPNetworks.ParameterLearning: EMParamLearner, initialize, converged, update, backpropagate
+    import SPNetworks.ParameterLearning: SEM, initialize, converged, update, backpropagate
 
     @testset "Simple DAG SPN" begin
 
@@ -46,7 +46,7 @@
         N = 3000
         data = rand(SPN,N)
 
-        learner = EMParamLearner(SPN)
+        learner = SEM(SPN)
         #initialize(learner)
         # @info "Running Expectation Maximization until convergence..."
         while !converged(learner) && learner.steps < 10
@@ -79,7 +79,7 @@
         N = 3000
         data = rand(SPN, N)
         nll = NLL(SPN, data)
-        learner = EMParamLearner(SPN)
+        learner = SEM(SPN)
         #initialize(learner)
         while !converged(learner) && learner.steps < 2
             update(learner, data)

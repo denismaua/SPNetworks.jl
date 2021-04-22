@@ -150,6 +150,25 @@ function backpropagate(spn::SumProductNetwork,values::Vector{Float64})::Vector{F
     return diff
 end
 
+"""
+Random initialization of weights
+"""
+function initialize(learner::ParameterLearner) #spn::SumProductNetwork)
+    spn = learner.spn
+    sumnodes = filter(i -> isa(spn[i], SumNode), 1:length(spn))
+    for i in sumnodes
+        #@inbounds ch = spn[i].children  # children(spn,i)        
+        @inbounds Random.rand!(spn[i].weights)
+        @inbounds spn[i].weights ./= sum(spn[i].weights) 
+        @assert sum(spn[i].weights) ≈ 1.0 "Unnormalized weight vector at node $i: $(sum(spn[i].weights)) | $(spn[i].weights)"
+    end    
+    gaussiannodes = filter(i -> isa(spn[i],GaussianDistribution), 1:length(spn))
+    for i in gaussiannodes
+        @inbounds spn[i].mean = rand()
+        @inbounds spn[i].variance = 1.0
+    end
+end
+
 include("ExpectationMaximization.jl")
 include("SquaredExpectationMaximization.jl")
 

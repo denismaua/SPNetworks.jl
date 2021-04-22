@@ -30,12 +30,11 @@ println("Validation data: $valid_filename")
 @show summary(vdata)
 # initialize EM learner
 learner = SQUAREM(spn)
+Random.seed!(3)
+initialize(learner) # generate random weights for each sum node
 println("It: $(learner.steps) \t NLL: $(NLL(spn, tdata)) \t held-out NLL: $(NLL(spn, vdata))")
-#Random.seed!(3)
-#initialize(learner) # generate random weights for each sum node
 # Running Expectation Maximization
-#while !converged(learner) && 
-while learner.steps < 20 # 11
+while !converged(learner) && learner.steps < 21
     @time score, α = update(learner, tdata) 
     testnll = NLL(spn, vdata)
     trainnll = NLL(spn, tdata)

@@ -22,26 +22,6 @@ tolerance::Float64 # tolerance for convergence criterion
 steps::Integer   # number of learning steps (epochs)
 minimumvariance::Float64 # minimum variance for Gaussian leaves
 SQUAREM(spn::SumProductNetwork) = new(spn, layers(spn), deepcopy(spn), deepcopy(spn), deepcopy(spn), deepcopy(spn), Array{Float64}(undef,length(spn)), Array{Float64}(undef,length(spn)), NaN, NaN, 1e-3, 0, 0.5)
-#TODO: use sparse tensor of weight updates
-end
-
-"""
-Random initialization of weights
-"""
-function initialize(learner::SQUAREM) #spn::SumProductNetwork)
-    spn = learner.spn
-    sumnodes = filter(i -> isa(spn[i], SumNode), 1:length(spn))
-    for i in sumnodes
-        #@inbounds ch = spn[i].children  # children(spn,i)        
-        @inbounds Random.rand!(spn[i].weights)
-        @inbounds spn[i].weights ./= sum(spn[i].weights) 
-        @assert sum(spn[i].weights) ≈ 1.0 "Unnormalized weight vector at node $i: $(sum(spn[i].weights)) | $(spn[i].weights)"
-    end    
-    gaussiannodes = filter(i -> isa(spn[i],GaussianDistribution), 1:length(spn))
-    for i in gaussiannodes
-        @inbounds spn[i].mean = rand()
-        @inbounds spn[i].variance = 1.0
-    end
 end
 
 """ 
@@ -62,10 +42,10 @@ spn[i].weights[j] = spn[i].weights[k] * backpropagate(spn)[i]/sum(spn[i].weights
 
 - `learner`: SQUAREM struct
 - `data`: Data Matrix
-- `smoothing`: weight smoothing factor (= pseudo expected count) [default: 0.1]
+- `smoothing`: weight smoothing factor (= pseudo expected count) [default: 0.0001]
 - `minimumvariance`: minimum variance for Gaussian leaves [default: learner.minimumvariance]
 """
-function update(learner::SQUAREM, Data::AbstractMatrix, smoothing::Float64 = 0.1, minimumvariance::Float64 = learner.minimumvariance)
+function update(learner::SQUAREM, Data::AbstractMatrix, smoothing::Float64 = 0.0001, minimumvariance::Float64 = learner.minimumvariance)
         
     numrows, numcols = size(Data)
 
