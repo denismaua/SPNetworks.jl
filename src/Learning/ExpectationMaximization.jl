@@ -62,9 +62,6 @@ spn[i].weights[j] = spn[i].weights[k] * backpropagate(spn)[i]/sum(spn[i].weights
 """
 function update(learner::EMParamLearner, Data::AbstractMatrix, learningrate::Float64 = 1.0, smoothing::Float64 = 0.1, minimumvariance::Float64 = learner.minimumvariance)
     
-    # regularization constant for logweights (to avoid degenerate cases)
-    τ = 1e-2
-    
     numrows, numcols = size(Data)
 
     spn = learner.spn

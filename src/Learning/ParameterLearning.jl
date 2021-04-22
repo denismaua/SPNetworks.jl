@@ -151,5 +151,6 @@ function backpropagate(spn::SumProductNetwork,values::Vector{Float64})::Vector{F
 end
 
 include("ExpectationMaximization.jl")
+include("SquaredExpectationMaximization.jl")
 
 end
