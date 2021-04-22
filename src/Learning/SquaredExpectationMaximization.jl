@@ -142,14 +142,14 @@ function update(learner::SQUAREM, Data::AbstractMatrix, smoothing::Float64 = 0.1
     end 
     # steplength   
     α = -max(sqrt(r_norm)/sqrt(v_norm),1)
-    println("α: $α")
+    #println("α: $α")
     # Compute θ' (reuse θ_1 for that matter)
     @inbounds Threads.@threads for i in sumnodes
         # θ' = θ0 - 2αr + α^2v
         θ_1[i].weights .= θ_0[i].weights 
         θ_1[i].weights .-= ((2*α).*r[i].weights)
         θ_1[i].weights .+= ((α*α).*v[i].weights) 
-        θ_1[i].weights .+ smoothing/length(θ_1[i].weights) # add term to prevent negative weights
+        θ_1[i].weights .+ smoothing/length(θ_1[i].weights) # add term to prevent negative weights due to numerical imprecision
         θ_1[i].weights ./= sum(θ_1[i].weights)
         @assert sum(θ_1[i].weights) ≈ 1.0 "3. Unnormalized weight vector at node $i: $(sum(θ_1[i].weights)) | $(θ_1[i].weights)"
         for w in θ_1[i].weights
