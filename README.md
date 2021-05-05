@@ -134,7 +134,7 @@ SPN = SumProductNetwork(
 N = 3000
 data = rand(SPN,N)
 # Instantiate learner
-learner = EMParamLearner()
+learner = SEM()
 # Run EM for 10 iterations
 while learner.steps < 10    
     update(learner, SPN, data)
